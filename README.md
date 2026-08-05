@@ -1,6 +1,12 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Trendflow logo" width="300"/>
+</p>
+
 # Trendflow JS
 
 [![npm version](https://img.shields.io/npm/v/trendflow.svg)](https://www.npmjs.com/package/trendflow)
+[![CI](https://github.com/dariomory/trendflow-js/actions/workflows/ci.yml/badge.svg)](https://github.com/dariomory/trendflow-js/actions/workflows/ci.yml)
+[![docs](https://img.shields.io/badge/docs-github.io-blue)](https://dariomory.github.io/trendflow-js/)
 
 A type-safe JavaScript/TypeScript library for querying and exporting Google Trends data.
 The JavaScript port of [trendflow-py](https://github.com/dariomory/trendflow).

@@ -53,11 +53,15 @@
     "qa": "npm run typecheck && npm run test && npm run build",
     "prepublishOnly": "npm run qa && npm run check:affiliates",
     "smoke": "node scripts/smoke.mjs",
-    "check:affiliates": "node scripts/check-affiliates.mjs"
+    "check:affiliates": "node scripts/check-affiliates.mjs",
+    "docs": "typedoc",
+    "docs:serve": "typedoc && npx --yes http-server site -p 8000",
+    "release": "node scripts/release.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "tsup": "^8.5.1",
+    "typedoc": "^0.28.20",
     "typescript": "^5.7.0",
     "undici": "^8.10.0",
     "vitest": "^2.1.0"

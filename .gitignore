@@ -9,3 +9,4 @@ coverage/
 t.mjs
 har.mjs
 smoke-*.mjs
+site/

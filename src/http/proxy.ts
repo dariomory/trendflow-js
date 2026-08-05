@@ -78,7 +78,7 @@ export class ProxyPool {
     return undiciFetch(input, { ...init, dispatcher });
   }
 
-  /** Bind {@link fetch} so it can be handed to the transport as a plain function. */
+  /** Bind the pooled fetch so it can be handed to the transport as a plain function. */
   asFetch(): typeof globalThis.fetch {
     return ((input: any, init?: any) => this.fetch(input, init)) as typeof globalThis.fetch;
   }

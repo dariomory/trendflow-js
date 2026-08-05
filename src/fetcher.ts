@@ -1,7 +1,7 @@
 import { Region, Resolution, Timeframe } from "./enums.js";
 import { ResponseError, TooManyRequestsError } from "./http/errors.js";
 import { ProxyPool } from "./http/proxy.js";
-import type { RpcIds } from "./http/batchexecute.js";
+import { UnknownRpcError, type RpcIds } from "./http/batchexecute.js";
 import { GoogleTrendsHttpSession } from "./http/session.js";
 import type {
   InterestByRegionResult,
@@ -89,10 +89,12 @@ export interface ClientOptions {
 function shouldRotate(error: unknown): boolean {
   if (error instanceof TooManyRequestsError) return true;
   if (error instanceof ResponseError) return error.status === 403;
+  // A renamed RPC id fails identically on every exit IP, so rotating just burns the pool.
+  if (error instanceof UnknownRpcError) return false;
   return true;
 }
 
-/** Fetches data via the in-tree {@link GoogleTrendsHttpSession}. */
+/** Fetches data via the in-tree Google Trends HTTP session. */
 export class GoogleTrendsFetcher implements TrendsFetcher {
   private readonly session: GoogleTrendsHttpSession;
   private readonly pool: ProxyPool | undefined;

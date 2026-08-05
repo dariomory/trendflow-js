@@ -1,0 +1,17 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "site",
+  "name": "Trendflow JS",
+  "readme": "docs/index.md",
+  "projectDocuments": ["docs/usage.md", "docs/proxies.md"],
+  "includeVersion": true,
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "sortEntryPoints": false,
+  "navigationLinks": {
+    "GitHub": "https://github.com/dariomory/trendflow-js",
+    "npm": "https://www.npmjs.com/package/trendflow",
+    "Python sibling": "https://dariomory.github.io/trendflow/"
+  }
+}
