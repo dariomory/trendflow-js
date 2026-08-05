@@ -20,12 +20,19 @@
     "url": "https://github.com/dariomory/trendflow-js/issues"
   },
   "type": "module",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
@@ -39,16 +46,19 @@
   },
   "sideEffects": false,
   "scripts": {
-    "build": "tsc",
+    "build": "tsup",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
     "qa": "npm run typecheck && npm run test && npm run build",
-    "prepublishOnly": "npm run qa"
+    "prepublishOnly": "npm run qa",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
+    "tsup": "^8.5.1",
     "typescript": "^5.7.0",
+    "undici": "^8.10.0",
     "vitest": "^2.1.0"
   },
   "publishConfig": {

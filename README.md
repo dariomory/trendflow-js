@@ -87,8 +87,32 @@ try {
 }
 ```
 
-Google Trends aggressively rate-limits datacenter and shared IPs. `429` is a fact of life
-with this API, not a bug in the client.
+Google Trends aggressively rate-limits datacenter and shared IPs, so `429` is common even on
+your first request of the day. Two things matter:
+
+1. **User-Agent.** Google returns `429` to the default agent strings Node HTTP clients send,
+   no matter how few requests you have made. This library sends a browser User-Agent by
+   default for exactly that reason — if you override `headers`, keep a realistic one.
+2. **IP reputation.** Once an IP is flagged, every request gets `429` regardless of headers.
+   Route through a residential proxy to recover.
+
+### Using a proxy
+
+There is no proxy option to configure: pass your own `fetch` and the library uses it for every
+request. In Node, bind an [undici](https://github.com/nodejs/undici) `ProxyAgent`:
+
+```ts
+import { ProxyAgent, fetch as undiciFetch } from "undici";
+import { Client } from "trendflow";
+
+const agent = new ProxyAgent("http://user:pass@proxy.example.com:7000");
+const proxiedFetch = (input, init = {}) =>
+  undiciFetch(input, { ...init, dispatcher: agent });
+
+const tf = new Client({ fetch: proxiedFetch as typeof globalThis.fetch });
+```
+
+The same hook works for logging, caching, or stubbing requests in tests.
 
 ### Browser / Next.js
 
@@ -102,12 +126,20 @@ headers — calls from browser JavaScript will be blocked. Use this library serv
 |-----------------------|:-----------------------:|:----------------:|
 | Interest over time    | ✅                      | ✅               |
 | Interest by region    | ✅                      | ✅               |
-| Trending now          | ✅                      | ✅               |
+| Trending now          | ⚠️ [†](#trending-now)   | ⚠️ [†](#trending-now) |
 | Related queries       | ✅                      | ✅               |
 | CSV/JSON export       | ✅                      | ✅               |
 | pandas DataFrame      | ✅                      | ❌ N/A           |
 | Plain-object rows     | ❌ N/A                  | ✅ `toArray()`   |
 | CLI                   | ✅                      | 🔜 planned       |
+
+<a id="trending-now"></a>
+† **`trendingNow()` is currently broken upstream, in both libraries.** Google retired the
+`hottrends/visualize/internal/data` endpoint it calls, along with `api/dailytrends` and
+`api/realtimetrends`; all three now return HTTP 404. Trending Now moved to an
+undocumented `batchexecute` RPC that neither library implements yet. The method is kept
+so the API surface stays stable, and will throw `ResponseError` (404) until it is reworked.
+The other three queries are verified working against live Google Trends.
 
 ### API mapping
 
@@ -136,8 +168,15 @@ git clone git@github.com:dariomory/trendflow-js.git
 cd trendflow-js
 npm install
 
-npm test        # vitest
+npm test        # vitest — 60 tests, fully offline against a stubbed fetch
 npm run qa      # typecheck + test + build
+```
+
+The unit tests never touch the network. To check the real endpoints:
+
+```bash
+npm run build && npm run smoke
+TRENDFLOW_PROXY_URL=http://user:pass@host:7000 npm run smoke   # via a proxy
 ```
 
 ## Author

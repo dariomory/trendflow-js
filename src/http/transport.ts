@@ -43,6 +43,19 @@ function readSetCookies(headers: Headers): string[] {
   return single ? [single] : [];
 }
 
+/** Pull just the `NID` cookie out of a response's `Set-Cookie` headers. */
+function extractNid(headers: Headers): Record<string, string> {
+  const cookies: Record<string, string> = {};
+  for (const raw of readSetCookies(headers)) {
+    const pair = raw.split(";")[0] ?? "";
+    const separator = pair.indexOf("=");
+    if (separator > 0 && pair.slice(0, separator).trim() === "NID") {
+      cookies.NID = pair.slice(separator + 1).trim();
+    }
+  }
+  return cookies;
+}
+
 /** Low-level Trends host requests: NID cookie + JSON responses. */
 export class TrendsJsonTransport {
   readonly timeout: number;
@@ -71,18 +84,16 @@ export class TrendsJsonTransport {
   /** Fetch the `NID` consent cookie Google requires before the widget APIs answer. */
   async fetchNidCookies(): Promise<Record<string, string>> {
     const response = await this.fetchImpl(this.exploreCookieUrl(), {
+      headers: this.headers,
       signal: AbortSignal.timeout(this.timeout),
     });
-    const cookies: Record<string, string> = {};
-    for (const raw of readSetCookies(response.headers)) {
-      const [pair] = raw.split(";");
-      const separator = pair?.indexOf("=") ?? -1;
-      if (separator > 0) {
-        const name = pair!.slice(0, separator).trim();
-        if (name === "NID") cookies[name] = pair!.slice(separator + 1).trim();
-      }
-    }
-    return cookies;
+    return extractNid(response.headers);
+  }
+
+  /** Google rotates `NID` on most responses; keep the freshest one. */
+  private refreshCookies(headers: Headers): void {
+    const fresh = extractNid(headers);
+    if (fresh.NID) this.cookies = fresh;
   }
 
   /** Populate the cookie jar once; subsequent calls reuse it. */
@@ -123,6 +134,8 @@ export class TrendsJsonTransport {
         lastError = error;
         continue;
       }
+
+      this.refreshCookies(response.headers);
 
       const contentType = response.headers.get("content-type") ?? "";
       if (response.status === 200 && isJsonContentType(contentType)) {

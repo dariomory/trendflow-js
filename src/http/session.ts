@@ -7,6 +7,14 @@ export type Gprop = "" | "images" | "news" | "youtube" | "froogle";
 
 const ALLOWED_GPROPS: readonly Gprop[] = ["", "images", "news", "youtube", "froogle"];
 
+/**
+ * Google answers the widgetdata endpoints with HTTP 429 unless the request carries a
+ * browser-like User-Agent — the default agent strings used by Node HTTP clients are refused
+ * regardless of how few requests have been made. Override via the `headers` option.
+ */
+const DEFAULT_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
+
 export interface SessionOptions {
   hl?: string;
   tz?: number;
@@ -62,6 +70,7 @@ export class GoogleTrendsHttpSession {
       headers: {
         accept: "application/json, text/plain, */*",
         "accept-language": this.hl,
+        "user-agent": DEFAULT_USER_AGENT,
         origin: "https://trends.google.com",
         referer: `${ep.BASE_TRENDS_URL}/explore`,
         ...options.headers,
