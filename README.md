@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/logo.png" alt="Trendflow logo" width="300"/>
+  <img src="docs/logo.png" alt="Trendflow JS logo" width="300"/>
 </p>
 
 # Trendflow JS
@@ -23,7 +23,7 @@ The JavaScript port of [trendflow-py](https://github.com/dariomory/trendflow).
 npm install trendflow
 ```
 
-Requires Node.js 18+ (uses the global `fetch`). Ships ESM with bundled type declarations.
+Requires Node.js 18+ (uses the global `fetch`). Ships ESM and CommonJS with bundled type declarations.
 
 ## Usage
 
@@ -55,10 +55,11 @@ for (const row of regional.rows) {
   console.log(row.label, row.value);
 }
 
-// Trending searches right now
+// Trending searches right now (any country code, or omit for worldwide)
 const trending = await tf.trendingNow(Region.US);
 for (const item of trending.results) {
-  console.log(item.title, item.traffic, item.articles);
+  console.log(item.title, item.growth, item.volume, item.traffic);
+  // "fifa world cup 2026"  3650  6  "+3,650%"
 }
 
 // Related queries
@@ -137,8 +138,8 @@ on one exit IP; sending the follow-up `widgetdata` call from a different IP earn
 the cookie jar each time. For the same reason, point the pool at **sticky sessions** rather
 than per-request rotating endpoints if your provider offers the choice.
 
-Rotation is skipped for errors a different IP cannot fix, such as the `404` from
-[`trendingNow()`](#trending-now).
+Rotation is skipped for errors a different IP cannot fix, such as a `404` or the
+`UnknownRpcError` raised when Google renames a `batchexecute` RPC id.
 
 #### Where to get proxies
 

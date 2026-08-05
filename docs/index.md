@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./logo.png" alt="Trendflow logo" width="300"/>
+  <img src="./logo.png" alt="Trendflow JS logo" width="300"/>
 </p>
 
 # Trendflow JS
