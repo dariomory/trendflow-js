@@ -1,5 +1,5 @@
 import type { RelatedQueriesRaw } from "../parsers.js";
-import { BatchExecuteClient, type TrendingRow } from "./batchexecute.js";
+import { BatchExecuteClient, type RpcIds, type TrendingRow } from "./batchexecute.js";
 import * as ep from "./endpoints.js";
 import { TrendsJsonTransport } from "./transport.js";
 
@@ -25,6 +25,8 @@ export interface SessionOptions {
   retries?: number;
   headers?: Record<string, string>;
   fetch?: typeof globalThis.fetch;
+  /** Override the pinned batchexecute RPC identifiers if Google renames one. */
+  rpcIds?: RpcIds;
 }
 
 export interface BuildPayloadOptions {
@@ -87,6 +89,7 @@ export class GoogleTrendsHttpSession {
       timeout,
       headers,
       fetch: options.fetch ?? globalThis.fetch,
+      rpcIds: options.rpcIds,
     });
   }
 

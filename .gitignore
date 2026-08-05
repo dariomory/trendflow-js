@@ -4,3 +4,8 @@ coverage/
 *.tgz
 .DS_Store
 .env
+
+# scratch files
+t.mjs
+har.mjs
+smoke-*.mjs

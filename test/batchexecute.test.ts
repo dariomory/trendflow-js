@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Region } from "../src/enums.js";
 import { GoogleTrendsFetcher, TrendingWindow } from "../src/fetcher.js";
-import { parseBatchExecute, RPC_TRENDING } from "../src/http/batchexecute.js";
+import { parseBatchExecute, RPC_TRENDING, UnknownRpcError } from "../src/http/batchexecute.js";
 import { ResponseError, TooManyRequestsError } from "../src/http/errors.js";
 
 /** The real envelope shape: `)]}'` then repeating `<length>\n<json>` frames. */
@@ -119,6 +119,38 @@ describe("trendingNow", () => {
     await expect(
       new GoogleTrendsFetcher({ fetch: failed.fetchImpl }).trendingNow(Region.US),
     ).rejects.toBeInstanceOf(ResponseError);
+  });
+
+  it("reports a renamed RPC id instead of returning empty", async () => {
+    // Google answers with a frame for a different rpc id than the one requested.
+    const fetchImpl = (async () =>
+      new Response(envelope("someOtherId", TRENDING_PAYLOAD), {
+        headers: { "content-type": "application/json" },
+      })) as typeof globalThis.fetch;
+
+    const error = await new GoogleTrendsFetcher({ fetch: fetchImpl })
+      .trendingNow(Region.US)
+      .catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(UnknownRpcError);
+    expect((error as UnknownRpcError).rpcId).toBe(RPC_TRENDING);
+    expect((error as Error).message).toMatch(/rpcIds/);
+  });
+
+  it("uses an overridden rpc id", async () => {
+    const calls: string[] = [];
+    const fetchImpl = (async (input: any) => {
+      calls.push(String(input));
+      return new Response(envelope("newId", TRENDING_PAYLOAD), {
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof globalThis.fetch;
+
+    const client = new GoogleTrendsFetcher({ fetch: fetchImpl, rpcIds: { trending: "newId" } });
+    const result = await client.trendingNow(Region.US);
+
+    expect(result.results).toHaveLength(2);
+    expect(calls[0]).toContain("rpcids=newId");
   });
 
   it("does not need a cookie, unlike the widgetdata endpoints", async () => {

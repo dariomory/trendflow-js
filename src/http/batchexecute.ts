@@ -16,6 +16,30 @@ export const RPC_TRENDING = "fXqlme";
 /** `DqDTgb`: the full geo hierarchy — every country with its subregions. */
 export const RPC_GEO_LIST = "DqDTgb";
 
+/** Runtime overrides for the pinned RPC identifiers. */
+export interface RpcIds {
+  trending?: string;
+  geoList?: string;
+}
+
+/**
+ * Raised when Google returns no frame for the RPC that was called — the signature of an
+ * identifier that has been renamed on Google's side.
+ */
+export class UnknownRpcError extends Error {
+  readonly rpcId: string;
+
+  constructor(rpcId: string) {
+    super(
+      `Google returned no data for RPC '${rpcId}'. This usually means the RPC identifier ` +
+        `changed on Google's side. Override it with the \`rpcIds\` client option, and ` +
+        `please open an issue at https://github.com/dariomory/trendflow-js/issues`,
+    );
+    this.name = "UnknownRpcError";
+    this.rpcId = rpcId;
+  }
+}
+
 /** One `[term, growthPercent, volumeIndex]` row from the trending RPC. */
 export type TrendingRow = [string, number, number];
 
@@ -24,6 +48,7 @@ export interface BatchExecuteOptions {
   timeout: number;
   headers: Record<string, string>;
   fetch: typeof globalThis.fetch;
+  rpcIds?: RpcIds;
 }
 
 /**
@@ -61,15 +86,24 @@ export class BatchExecuteClient {
   private readonly timeout: number;
   private readonly headers: Record<string, string>;
   private readonly fetchImpl: typeof globalThis.fetch;
+  readonly trendingRpcId: string;
+  readonly geoListRpcId: string;
 
   constructor(options: BatchExecuteOptions) {
     this.hl = options.hl;
     this.timeout = options.timeout;
     this.headers = options.headers;
     this.fetchImpl = options.fetch;
+    this.trendingRpcId = options.rpcIds?.trending ?? RPC_TRENDING;
+    this.geoListRpcId = options.rpcIds?.geoList ?? RPC_GEO_LIST;
   }
 
-  /** Invoke one RPC and return its decoded payload. */
+  /**
+   * Invoke one RPC and return its decoded payload.
+   *
+   * Throws {@link UnknownRpcError} when the response carries no frame for `rpcId`, which
+   * distinguishes a renamed identifier from a genuinely empty result.
+   */
   async call(rpcId: string, payload: unknown): Promise<unknown> {
     const url = new URL(BATCH_EXECUTE);
     url.searchParams.set("rpcids", rpcId);
@@ -102,15 +136,17 @@ export class BatchExecuteClient {
     if (response.status !== 200) {
       throw ResponseError.fromResponse(response);
     }
-    return parseBatchExecute(await response.text(), rpcId);
+    const parsed = parseBatchExecute(await response.text(), rpcId);
+    if (parsed === undefined) throw new UnknownRpcError(rpcId);
+    return parsed;
   }
 
   /**
    * Trending searches for a geo. `geo` is `"Worldwide"` or a country code such as `"US"`.
-   * `window` is Google's own undocumented recency selector; see `TRENDING_WINDOW`.
+   * `window` is Google's own undocumented recency selector; see `TrendingWindow`.
    */
   async trendingSearches(geo: string, window: number): Promise<TrendingRow[]> {
-    const data = await this.call(RPC_TRENDING, [
+    const data = await this.call(this.trendingRpcId, [
       [[geo, "", window, null, 2]],
       1,
       this.hl,
@@ -124,6 +160,6 @@ export class BatchExecuteClient {
 
   /** The full geo hierarchy: `[code, name, slug]` per country, each with its subregions. */
   async geoList(): Promise<unknown> {
-    return this.call(RPC_GEO_LIST, [this.hl, 1, 1]);
+    return this.call(this.geoListRpcId, [this.hl, 1, 1]);
   }
 }

@@ -1,6 +1,7 @@
 import { Region, Resolution, Timeframe } from "./enums.js";
 import { ResponseError, TooManyRequestsError } from "./http/errors.js";
 import { ProxyPool } from "./http/proxy.js";
+import type { RpcIds } from "./http/batchexecute.js";
 import { GoogleTrendsHttpSession } from "./http/session.js";
 import type {
   InterestByRegionResult,
@@ -74,6 +75,11 @@ export interface ClientOptions {
   onProxyRotate?: (info: { attempt: number; error: unknown }) => void;
   /** Injectable `fetch`, for proxies, logging, or tests. Defaults to the global. */
   fetch?: typeof globalThis.fetch;
+  /**
+   * Override the pinned `batchexecute` RPC identifiers. They are stable for long stretches
+   * but Google does rename them; this lets you patch without waiting for a release.
+   */
+  rpcIds?: RpcIds;
 }
 
 /**
@@ -112,6 +118,7 @@ export class GoogleTrendsFetcher implements TrendsFetcher {
       timeout,
       retries,
       fetch: this.pool ? this.pool.asFetch() : fetch,
+      rpcIds: options.rpcIds,
     });
   }
 
