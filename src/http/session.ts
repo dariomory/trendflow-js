@@ -1,0 +1,178 @@
+import type { RelatedQueriesRaw } from "../parsers.js";
+import * as ep from "./endpoints.js";
+import { TrendsJsonTransport } from "./transport.js";
+
+/** Google property to search within; empty string is web search. */
+export type Gprop = "" | "images" | "news" | "youtube" | "froogle";
+
+const ALLOWED_GPROPS: readonly Gprop[] = ["", "images", "news", "youtube", "froogle"];
+
+export interface SessionOptions {
+  hl?: string;
+  tz?: number;
+  geo?: string;
+  /** Per-request timeout in milliseconds. */
+  timeout?: number;
+  retries?: number;
+  headers?: Record<string, string>;
+  fetch?: typeof globalThis.fetch;
+}
+
+export interface BuildPayloadOptions {
+  cat?: number;
+  timeframe?: string;
+  geo?: string;
+  gprop?: Gprop;
+}
+
+interface Widget {
+  id: string;
+  token: string;
+  request: Record<string, any>;
+}
+
+/**
+ * Stateful client for the Google Trends internal APIs (explore + widgetdata).
+ *
+ * Composes {@link TrendsJsonTransport} for HTTP; this class holds comparison state and
+ * returns raw JSON for callers to parse (see `../parsers.ts`).
+ */
+export class GoogleTrendsHttpSession {
+  readonly hl: string;
+  readonly tz: number;
+  geo: string;
+  kwList: string[] = [];
+
+  private readonly http: TrendsJsonTransport;
+  private interestOverTimeWidget: Widget | undefined;
+  private interestByRegionWidget: Widget | undefined;
+  private relatedQueriesWidgets: Widget[] = [];
+
+  constructor(options: SessionOptions = {}) {
+    this.hl = options.hl ?? "en-US";
+    this.tz = options.tz ?? 360;
+    this.geo = options.geo ?? "";
+
+    this.http = new TrendsJsonTransport({
+      hl: this.hl,
+      tz: this.tz,
+      timeout: options.timeout ?? 10_000,
+      retries: options.retries,
+      fetch: options.fetch,
+      headers: {
+        accept: "application/json, text/plain, */*",
+        "accept-language": this.hl,
+        origin: "https://trends.google.com",
+        referer: `${ep.BASE_TRENDS_URL}/explore`,
+        ...options.headers,
+      },
+    });
+  }
+
+  get cookies(): Record<string, string> {
+    return this.http.cookies;
+  }
+
+  set cookies(value: Record<string, string>) {
+    this.http.cookies = value;
+  }
+
+  /** Set the comparison state and exchange it for widget tokens. */
+  async buildPayload(kwList: string[], options: BuildPayloadOptions = {}): Promise<void> {
+    const { cat = 0, timeframe = "today 5-y", geo = "", gprop = "" } = options;
+    if (!ALLOWED_GPROPS.includes(gprop)) {
+      throw new Error("gprop must be empty (web), images, news, youtube, or froogle");
+    }
+    this.kwList = kwList;
+    this.geo = geo || this.geo;
+
+    const req = {
+      comparisonItem: kwList.map((keyword) => ({ keyword, time: timeframe, geo: this.geo })),
+      category: cat,
+      property: gprop,
+    };
+
+    const data = await this.http.requestJson(ep.EXPLORE, "post", {
+      trimChars: 4,
+      params: { hl: this.hl, tz: this.tz, req: JSON.stringify(req) },
+    });
+    this.collectWidgets(data.widgets ?? []);
+  }
+
+  private collectWidgets(widgets: Widget[]): void {
+    this.relatedQueriesWidgets = [];
+    this.interestOverTimeWidget = undefined;
+    this.interestByRegionWidget = undefined;
+    let firstRegionToken = true;
+    for (const widget of widgets) {
+      if (widget.id === "TIMESERIES") this.interestOverTimeWidget = widget;
+      if (widget.id === "GEO_MAP" && firstRegionToken) {
+        this.interestByRegionWidget = widget;
+        firstRegionToken = false;
+      }
+      if (widget.id.includes("RELATED_QUERIES")) this.relatedQueriesWidgets.push(widget);
+    }
+  }
+
+  private requireWidget(widget: Widget | undefined, name: string): Widget {
+    if (!widget) {
+      throw new Error(`No ${name} widget available; call buildPayload() first`);
+    }
+    return widget;
+  }
+
+  /** The raw `default` object from the interest-over-time widget response. */
+  async interestOverTime(): Promise<Record<string, any>> {
+    const widget = this.requireWidget(this.interestOverTimeWidget, "TIMESERIES");
+    const data = await this.http.requestJson(ep.INTEREST_OVER_TIME, "get", {
+      trimChars: 5,
+      params: { req: JSON.stringify(widget.request), token: widget.token, tz: this.tz },
+    });
+    return data.default;
+  }
+
+  /** The raw `default` object from the interest-by-region response. */
+  async interestByRegion(
+    options: { resolution?: string; incLowVol?: boolean } = {},
+  ): Promise<Record<string, any>> {
+    const { resolution = "COUNTRY", incLowVol = false } = options;
+    const widget = this.requireWidget(this.interestByRegionWidget, "GEO_MAP");
+
+    if (this.geo === "" || (this.geo === "US" && ["DMA", "CITY", "REGION"].includes(resolution))) {
+      widget.request.resolution = resolution;
+    }
+    widget.request.includeLowSearchVolumeGeos = incLowVol;
+
+    const data = await this.http.requestJson(ep.INTEREST_BY_REGION, "get", {
+      trimChars: 5,
+      params: { req: JSON.stringify(widget.request), token: widget.token, tz: this.tz },
+    });
+    return data.default;
+  }
+
+  /** Per-keyword related queries: `top` / `rising` lists of ranked-keyword objects. */
+  async relatedQueries(): Promise<RelatedQueriesRaw> {
+    const result: RelatedQueriesRaw = {};
+    for (const widget of this.relatedQueriesWidgets) {
+      const keyword = String(
+        widget.request?.restriction?.complexKeywordsRestriction?.keyword?.[0]?.value ?? "",
+      );
+      const data = await this.http.requestJson(ep.RELATED_QUERIES, "get", {
+        trimChars: 5,
+        params: { req: JSON.stringify(widget.request), token: widget.token, tz: this.tz },
+      });
+      const rankedList = data.default?.rankedList ?? [];
+      result[keyword] = {
+        top: rankedList[0]?.rankedKeyword ?? null,
+        rising: rankedList[1]?.rankedKeyword ?? null,
+      };
+    }
+    return result;
+  }
+
+  /** Trending search titles for a property namespace key (e.g. `united_states`). */
+  async trendingSearches(pn = "united_states"): Promise<string[]> {
+    const data = await this.http.requestJson(ep.TRENDING_SEARCHES, "get");
+    return [...(data[pn] ?? [])];
+  }
+}

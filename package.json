@@ -1,0 +1,57 @@
+{
+  "name": "trendflow",
+  "version": "0.1.0",
+  "description": "A type-safe JavaScript/TypeScript library for querying and exporting Google Trends data",
+  "keywords": [
+    "google-trends",
+    "trends",
+    "typescript",
+    "scraper",
+    "analytics"
+  ],
+  "license": "MIT",
+  "author": "Dario Mory <dario@mory.dev> (https://mory.dev)",
+  "homepage": "https://github.com/dariomory/trendflow-js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dariomory/trendflow-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dariomory/trendflow-js/issues"
+  },
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "qa": "npm run typecheck && npm run test && npm run build",
+    "prepublishOnly": "npm run qa"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
