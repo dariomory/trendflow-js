@@ -86,6 +86,11 @@ jobs:
       - name: Publish
         # --provenance publishes a signed link back to this workflow run, the npm equivalent
         # of the attestation the PyPI workflow produces.
-        run: npm publish dist/*.tgz --provenance --access public
+        #
+        # The ./ on the path is required: npm reads a bare `dist/name.tgz` as GitHub
+        # `owner/repo` shorthand and tries to clone it over SSH.
+        run: |
+          tarball="$(ls dist/*.tgz)"
+          npm publish "./${tarball}" --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

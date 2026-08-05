@@ -5,7 +5,7 @@
 # Trendflow JS
 
 A type-safe JavaScript/TypeScript library for querying and exporting Google Trends data.
-The JavaScript port of [trendflow-py](https://github.com/dariomory/trendflow).
+The JavaScript port of [`trendflow-py`](https://github.com/dariomory/trendflow).
 
 ```bash
 npm install trendflow
@@ -31,17 +31,24 @@ console.log(trending.results[0]); // { title, growth, volume, traffic, articles 
 - **[Proxies and rate limits](./proxies.md)** — why Google returns `429`, and the proxy pool.
 - **API reference** — generated from the source; see the navigation sidebar.
 
-## Feature parity with `trendflow-py`
+## Feature parity with [`trendflow-py`](https://github.com/dariomory/trendflow)
 
-| Feature | Python (`trendflow-py`) | JS (`trendflow`) |
-|---------|:----------------------:|:----------------:|
+Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`trendflow`](https://github.com/dariomory/trendflow-js) 0.1.0. Versions are independent; each changelog cross-references the sibling release.
+
+| Feature | Python — [`trendflow-py`](https://pypi.org/project/trendflow-py/) | JS — [`trendflow`](https://www.npmjs.com/package/trendflow) |
+|---------|:----------------------------------:|:---------------------------:|
 | Interest over time | ✅ | ✅ |
 | Interest by region | ✅ | ✅ |
 | Trending now | ✅ | ✅ |
-| Trending growth %/volume | ✅ | ✅ |
+| Trending growth % and volume | ✅ | ✅ |
+| Trending for any country code | ✅ | ✅ |
 | Related queries | ✅ | ✅ |
-| CSV/JSON export | ✅ | ✅ |
-| Proxy pool | ✅ | ✅ |
-| pandas DataFrame | ✅ | ❌ N/A |
+| CSV / JSON export | ✅ | ✅ |
+| Rotating proxy pool | ✅ | ✅ |
+| Browser User-Agent by default | ✅ | ✅ |
+| Full geo hierarchy | ✅ `geo_list()` | ✅ `geoList()` |
+| Overridable RPC ids | ✅ | ✅ |
+| pandas DataFrame | ✅ `to_dataframe()` | ❌ N/A |
 | Plain-object rows | ❌ N/A | ✅ `toArray()` |
+| ESM + CommonJS + types | ❌ N/A | ✅ |
 | CLI | ✅ | 🔜 planned |

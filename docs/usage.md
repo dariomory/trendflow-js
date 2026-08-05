@@ -53,7 +53,7 @@ await tf.trendingNow();     // worldwide (the default)
 
 `growth` is the percentage rise over the window and `volume` a relative search-volume index.
 `articles` is always empty — this endpoint carries no article links; the field exists for
-compatibility with `trendflow-py`.
+compatibility with [`trendflow-py`](https://github.com/dariomory/trendflow).
 
 ## Related queries
 

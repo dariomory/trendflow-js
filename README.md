@@ -9,7 +9,7 @@
 [![docs](https://img.shields.io/badge/docs-github.io-blue)](https://dariomory.github.io/trendflow-js/)
 
 A type-safe JavaScript/TypeScript library for querying and exporting Google Trends data.
-The JavaScript port of [trendflow-py](https://github.com/dariomory/trendflow).
+The JavaScript port of [`trendflow-py`](https://github.com/dariomory/trendflow).
 
 - GitHub: [https://github.com/dariomory/trendflow-js/](https://github.com/dariomory/trendflow-js/)
 - npm package: [https://www.npmjs.com/package/trendflow](https://www.npmjs.com/package/trendflow)
@@ -146,6 +146,12 @@ Rotation is skipped for errors a different IP cannot fix, such as a `404` or the
 Residential proxies are what actually clears Google's `429`. Two providers verified against
 this library:
 
+<p align="center">
+  <a href="https://decodo.com/"><img src="docs/proxies/decodo.svg" alt="Decodo" height="56"/></a>
+  &nbsp;&nbsp;
+  <a href="https://oxylabs.io/"><img src="docs/proxies/oxylabs.svg" alt="Oxylabs" height="56"/></a>
+</p>
+
 | Provider | Notes | Endpoint format |
 |----------|-------|-----------------|
 | [Decodo](https://decodo.com/) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
@@ -188,27 +194,33 @@ headers — calls from browser JavaScript will be blocked. Use this library serv
 
 ## Feature Parity
 
-| Feature               | Python (`trendflow-py`) | JS (`trendflow`) |
-|-----------------------|:-----------------------:|:----------------:|
-| Interest over time    | ✅                      | ✅               |
-| Interest by region    | ✅                      | ✅               |
-| Trending now          | ❌ [†](#trending-now)   | ✅ [†](#trending-now) |
-| Trending growth %/volume | ❌ N/A               | ✅               |
-| Any country code      | ❌ 16 hardcoded         | ✅ all           |
-| Related queries       | ✅                      | ✅               |
-| CSV/JSON export       | ✅                      | ✅               |
-| Proxy support         | ✅                      | ✅               |
-| Automatic proxy pool  | ❌ N/A                  | ✅               |
-| pandas DataFrame      | ✅                      | ❌ N/A           |
-| Plain-object rows     | ❌ N/A                  | ✅ `toArray()`   |
-| CLI                   | ✅                      | 🔜 planned       |
+Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`trendflow`](https://github.com/dariomory/trendflow-js) 0.1.0. Versions are independent; each changelog cross-references the sibling release.
 
-<a id="trending-now"></a>
-† Google retired the `hottrends/visualize/internal/data` endpoint, along with
-`api/dailytrends` and `api/realtimetrends`; all three now return HTTP 404, which is why
-`trending_now()` is broken in `trendflow-py`. This library instead calls the
-`batchexecute` RPC that trends.google.com itself uses, so `trendingNow()` works — and
-returns more than the old endpoint did:
+| Feature | Python — [`trendflow-py`](https://pypi.org/project/trendflow-py/) | JS — [`trendflow`](https://www.npmjs.com/package/trendflow) |
+|---------|:----------------------------------:|:---------------------------:|
+| Interest over time | ✅ | ✅ |
+| Interest by region | ✅ | ✅ |
+| Trending now | ✅ | ✅ |
+| Trending growth % and volume | ✅ | ✅ |
+| Trending for any country code | ✅ | ✅ |
+| Related queries | ✅ | ✅ |
+| CSV / JSON export | ✅ | ✅ |
+| Rotating proxy pool | ✅ | ✅ |
+| Browser User-Agent by default | ✅ | ✅ |
+| Full geo hierarchy | ✅ `geo_list()` | ✅ `geoList()` |
+| Overridable RPC ids | ✅ | ✅ |
+| pandas DataFrame | ✅ `to_dataframe()` | ❌ N/A |
+| Plain-object rows | ❌ N/A | ✅ `toArray()` |
+| ESM + CommonJS + types | ❌ N/A | ✅ |
+| CLI | ✅ | 🔜 planned |
+
+### Trending now
+
+Google retired the `hottrends/visualize/internal/data` endpoint, along with
+`api/dailytrends` and `api/realtimetrends`; all three now return HTTP 404. This library
+calls the `batchexecute` RPC that trends.google.com itself uses instead — as does
+[`trendflow-py`](https://github.com/dariomory/trendflow) from 0.2.0 — and it returns more
+than the old endpoint did:
 
 ```ts
 const trending = await tf.trendingNow(Region.US);
@@ -225,7 +237,7 @@ Three practical wins over the old endpoint:
   from the widgetdata endpoints, so `trendingNow()` often works with no proxy at all.
 
 `articles` is always empty — this endpoint carries no article links. The field is kept for
-compatibility with `trendflow-py`.
+compatibility with [`trendflow-py`](https://github.com/dariomory/trendflow).
 
 The window is selectable via `TrendingWindow`:
 

@@ -3,8 +3,8 @@
 ## 0.1.0
 
 Initial release — the JavaScript/TypeScript port of
-[trendflow-py](https://github.com/dariomory/trendflow). Reaches feature parity with
-`trendflow-py` 0.2.0.
+[`trendflow-py`](https://github.com/dariomory/trendflow). Reaches feature parity with
+[`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0.
 
 ### Core API
 
@@ -20,7 +20,7 @@ Not ported: the pandas `to_dataframe()` bridge (`toArray()` replaces it) and the
 ### Trending searches
 
 `trendingNow()` runs on the `batchexecute` RPC that trends.google.com itself uses, rather
-than the `hottrends` endpoint `trendflow-py` called before 0.2.0 — Google retired that one
+than the `hottrends` endpoint [`trendflow-py`](https://github.com/dariomory/trendflow) called before 0.2.0 — Google retired that one
 along with `dailytrends` and `realtimetrends`, and all three now return 404.
 
 - `TrendingItem` carries `growth` (percentage rise) and `volume` (relative search volume);

@@ -57,6 +57,12 @@ re-seeding the cookie jar each time. Two consequences:
 Residential proxies are what actually clears Google's `429`. Two providers verified against
 this library:
 
+<p align="center">
+  <a href="https://decodo.com/"><img src="./proxies/decodo.svg" alt="Decodo" height="56"/></a>
+  &nbsp;&nbsp;
+  <a href="https://oxylabs.io/"><img src="./proxies/oxylabs.svg" alt="Oxylabs" height="56"/></a>
+</p>
+
 | Provider | Notes | Endpoint format |
 |----------|-------|-----------------|
 | [Decodo](https://decodo.com/) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
