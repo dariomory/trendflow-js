@@ -17,3 +17,4 @@ export type {
 } from "./models.js";
 
 export { ResponseError, TooManyRequestsError } from "./http/errors.js";
+export { ProxyPool } from "./http/proxy.js";

@@ -87,6 +87,9 @@ try {
 }
 ```
 
+<a id="rate-limits"></a>
+### Rate limits
+
 Google Trends aggressively rate-limits datacenter and shared IPs, so `429` is common even on
 your first request of the day. Two things matter:
 
@@ -96,23 +99,84 @@ your first request of the day. Two things matter:
 2. **IP reputation.** Once an IP is flagged, every request gets `429` regardless of headers.
    Route through a residential proxy to recover.
 
-### Using a proxy
+### Using a proxy pool
 
-There is no proxy option to configure: pass your own `fetch` and the library uses it for every
-request. In Node, bind an [undici](https://github.com/nodejs/undici) `ProxyAgent`:
+Pass a list of proxy URLs and the client rotates through them automatically, moving to the
+next one whenever a query is refused:
+
+```ts
+import { Client, Region, Timeframe } from "trendflow";
+
+const tf = new Client({
+  proxies: [
+    "http://user:pass@gate.decodo.com:7000",
+    "http://user:pass@pr.oxylabs.io:7777",
+    "http://user:pass@brd.superproxy.io:22225",
+  ],
+  maxProxyAttempts: 3, // defaults to the pool size, capped at 5
+  onProxyRotate: ({ attempt, error }) => console.warn(`rotated after ${attempt}:`, error),
+});
+
+const data = await tf.interestOverTime(["Python"], Timeframe.PAST_YEAR, Region.US);
+console.log(tf.currentProxy); // the proxy that answered
+```
+
+Proxy support needs [`undici`](https://github.com/nodejs/undici), an optional peer
+dependency — `npm install undici`. Mixing providers in one pool is fine; they are just URLs.
+
+**Rotation happens per query, not per request — this matters.** Google binds the `NID`
+cookie and the widget token to the IP that requested them, so a single query must complete
+on one exit IP; sending the follow-up `widgetdata` call from a different IP earns an instant
+`429`. The pool pins one proxy for the whole query and advances only on failure, re-seeding
+the cookie jar each time. For the same reason, point the pool at **sticky sessions** rather
+than per-request rotating endpoints if your provider offers the choice.
+
+Rotation is skipped for errors a different IP cannot fix, such as the `404` from
+[`trendingNow()`](#trending-now).
+
+#### Where to get proxies
+
+Residential proxies are what actually clears Google's `429`. Two providers verified against
+this library:
+
+| Provider | Notes | Endpoint format |
+|----------|-------|-----------------|
+| [Decodo](https://decodo.com/?ref=REPLACE_WITH_DECODO_AFFILIATE_ID) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
+| [Oxylabs](https://oxylabs.io/?ref=REPLACE_WITH_OXYLABS_AFFILIATE_ID) | Larger pool and better Google success rates; enterprise pricing. | `http://user:pass@pr.oxylabs.io:7777` |
+
+```ts
+const tf = new Client({
+  proxies: [
+    "http://user:pass@gate.decodo.com:7000", // Decodo
+    "http://user:pass@pr.oxylabs.io:7777",   // Oxylabs
+  ],
+});
+```
+
+Ask for **sticky sessions** when you sign up — per-request rotating endpoints break the
+cookie/token binding described above. Note that a shared residential pool can be exhausted
+for Google Trends specifically, in which case even a valid proxy returns `429`; that is what
+`maxProxyAttempts` is for.
+
+> **Disclosure:** the two provider links above are affiliate links — this project may earn a
+> commission if you sign up through them, at no extra cost to you. They are recommended
+> because they were actually tested against this library, and the plain endpoint formats are
+> listed so you can use any provider, or none.
+
+#### Bringing your own client
+
+For logging, caching, or custom routing, pass a `fetch` instead (mutually exclusive with
+`proxies` — the library will tell you if you pass both):
 
 ```ts
 import { ProxyAgent, fetch as undiciFetch } from "undici";
-import { Client } from "trendflow";
 
 const agent = new ProxyAgent("http://user:pass@proxy.example.com:7000");
-const proxiedFetch = (input, init = {}) =>
-  undiciFetch(input, { ...init, dispatcher: agent });
-
-const tf = new Client({ fetch: proxiedFetch as typeof globalThis.fetch });
+const tf = new Client({
+  fetch: ((input, init = {}) =>
+    undiciFetch(input, { ...init, dispatcher: agent })) as typeof globalThis.fetch,
+});
 ```
-
-The same hook works for logging, caching, or stubbing requests in tests.
 
 ### Browser / Next.js
 
@@ -129,6 +193,8 @@ headers — calls from browser JavaScript will be blocked. Use this library serv
 | Trending now          | ⚠️ [†](#trending-now)   | ⚠️ [†](#trending-now) |
 | Related queries       | ✅                      | ✅               |
 | CSV/JSON export       | ✅                      | ✅               |
+| Proxy support         | ✅                      | ✅               |
+| Automatic proxy pool  | ❌ N/A                  | ✅               |
 | pandas DataFrame      | ✅                      | ❌ N/A           |
 | Plain-object rows     | ❌ N/A                  | ✅ `toArray()`   |
 | CLI                   | ✅                      | 🔜 planned       |

@@ -103,6 +103,11 @@ export class TrendsJsonTransport {
     }
   }
 
+  /** Drop the cookie jar so the next request re-seeds it — required after changing exit IP. */
+  resetCookies(): void {
+    this.cookies = {};
+  }
+
   private cookieHeader(): string {
     return Object.entries(this.cookies)
       .map(([name, value]) => `${name}=${value}`)

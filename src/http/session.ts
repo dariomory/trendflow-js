@@ -86,6 +86,11 @@ export class GoogleTrendsHttpSession {
     this.http.cookies = value;
   }
 
+  /** Drop the cookie jar and cached widget tokens; both are bound to the current exit IP. */
+  resetCookies(): void {
+    this.http.resetCookies();
+  }
+
   /** Set the comparison state and exchange it for widget tokens. */
   async buildPayload(kwList: string[], options: BuildPayloadOptions = {}): Promise<void> {
     const { cat = 0, timeframe = "today 5-y", geo = "", gprop = "" } = options;

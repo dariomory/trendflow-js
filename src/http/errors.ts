@@ -18,6 +18,9 @@ export class ResponseError extends Error {
   }
 }
 
+/** Where the rate-limit guidance lives. Deliberately a plain docs link, not a referral one. */
+export const RATE_LIMIT_DOCS_URL = "https://github.com/dariomory/trendflow-js#rate-limits";
+
 /** HTTP 429 from Google Trends. */
 export class TooManyRequestsError extends ResponseError {
   constructor(message: string, response: Response) {
@@ -27,7 +30,8 @@ export class TooManyRequestsError extends ResponseError {
 
   static override fromResponse(response: Response): TooManyRequestsError {
     return new TooManyRequestsError(
-      `The request failed: Google returned a response with code ${response.status}`,
+      `The request failed: Google returned a response with code ${response.status}. ` +
+        `Google rate-limits by exit IP; see ${RATE_LIMIT_DOCS_URL} for how to work around it.`,
       response,
     );
   }

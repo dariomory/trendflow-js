@@ -51,8 +51,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "qa": "npm run typecheck && npm run test && npm run build",
-    "prepublishOnly": "npm run qa",
-    "smoke": "node scripts/smoke.mjs"
+    "prepublishOnly": "npm run qa && npm run check:affiliates",
+    "smoke": "node scripts/smoke.mjs",
+    "check:affiliates": "node scripts/check-affiliates.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -63,5 +64,13 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "peerDependencies": {
+    "undici": ">=6"
+  },
+  "peerDependenciesMeta": {
+    "undici": {
+      "optional": true
+    }
   }
 }
