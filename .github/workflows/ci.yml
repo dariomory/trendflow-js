@@ -67,6 +67,3 @@ jobs:
       # Catches broken doc links before they reach Pages.
       - name: Build docs
         run: npm run docs
-
-      - name: Warn on unreplaced affiliate placeholders
-        run: npm run check:affiliates

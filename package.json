@@ -51,9 +51,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "qa": "npm run typecheck && npm run test && npm run build",
-    "prepublishOnly": "npm run qa && npm run check:affiliates",
+    "prepublishOnly": "npm run qa",
     "smoke": "node scripts/smoke.mjs",
-    "check:affiliates": "node scripts/check-affiliates.mjs",
     "docs": "typedoc",
     "docs:serve": "typedoc && npx --yes http-server site -p 8000",
     "release": "node scripts/release.mjs"

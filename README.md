@@ -148,8 +148,8 @@ this library:
 
 | Provider | Notes | Endpoint format |
 |----------|-------|-----------------|
-| [Decodo](https://decodo.com/?ref=REPLACE_WITH_DECODO_AFFILIATE_ID) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
-| [Oxylabs](https://oxylabs.io/?ref=REPLACE_WITH_OXYLABS_AFFILIATE_ID) | Larger pool and better Google success rates; enterprise pricing. | `http://user:pass@pr.oxylabs.io:7777` |
+| [Decodo](https://decodo.com/) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
+| [Oxylabs](https://oxylabs.io/) | Larger pool and better Google success rates; enterprise pricing. | `http://user:pass@pr.oxylabs.io:7777` |
 
 ```ts
 const tf = new Client({
@@ -164,11 +164,6 @@ Ask for **sticky sessions** when you sign up — per-request rotating endpoints 
 cookie/token binding described above. Note that a shared residential pool can be exhausted
 for Google Trends specifically, in which case even a valid proxy returns `429`; that is what
 `maxProxyAttempts` is for.
-
-> **Disclosure:** the two provider links above are affiliate links — this project may earn a
-> commission if you sign up through them, at no extra cost to you. They are recommended
-> because they were actually tested against this library, and the plain endpoint formats are
-> listed so you can use any provider, or none.
 
 #### Bringing your own client
 

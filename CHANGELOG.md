@@ -52,5 +52,3 @@ along with `dailytrends` and `realtimetrends`, and all three now return 404.
   The widgetdata-backed methods already cover that data.
 - The `batchexecute` RPC identifiers are pinned constants. If Google renames one, calls raise
   `UnknownRpcError` and the `rpcIds` option patches it without waiting for a release.
-- Proxy provider recommendations in the README carry affiliate links and a disclosure. See
-  `AFFILIATES.md` — the IDs are placeholders until replaced.

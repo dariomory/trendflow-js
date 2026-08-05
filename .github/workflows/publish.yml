@@ -41,9 +41,6 @@ jobs:
       - name: Quality checks
         run: npm run qa
 
-      - name: Warn on unreplaced affiliate placeholders
-        run: npm run check:affiliates
-
       - name: Pack
         run: npm pack --pack-destination dist
 
