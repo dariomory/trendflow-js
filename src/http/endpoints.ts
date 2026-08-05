@@ -13,4 +13,10 @@ export const CATEGORY_PICKER = `${BASE_TRENDS_URL}/api/explore/pickers/category`
 export const TODAY_SEARCHES = `${BASE_TRENDS_URL}/api/dailytrends`;
 export const REALTIME_TRENDING = `${BASE_TRENDS_URL}/api/realtimetrends`;
 
+/**
+ * The RPC endpoint behind the current Trends UI. TRENDING_SEARCHES, TODAY_SEARCHES, and
+ * REALTIME_TRENDING above are all retired by Google and now return 404; this replaces them.
+ */
+export const BATCH_EXECUTE = "https://trends.google.com/_/TrendsUi/data/batchexecute";
+
 export const HTTP_TOO_MANY_REQUESTS = 429;

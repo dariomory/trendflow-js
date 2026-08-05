@@ -9,8 +9,8 @@ import {
   parseRisingRelated,
   parseTopRelated,
   relatedQueriesToResult,
-  trendingResultFromTitles,
-  trendingTitlesToItems,
+  trendingResultFromRows,
+  trendingRowsToItems,
 } from "../src/parsers.js";
 
 const JAN1 = Math.floor(Date.UTC(2024, 0, 1) / 1000);
@@ -114,15 +114,29 @@ describe("interestByRegionRows", () => {
 });
 
 describe("trending helpers", () => {
-  it("maps titles to items with empty traffic and articles", () => {
-    expect(trendingTitlesToItems(["one", "two"])).toEqual([
-      { title: "one", traffic: "", articles: [] },
-      { title: "two", traffic: "", articles: [] },
+  it("maps [term, growth, volume] rows to items", () => {
+    expect(trendingRowsToItems([["fifa world cup 2026", 3950, 7]])).toEqual([
+      { title: "fifa world cup 2026", growth: 3950, volume: 7, traffic: "+3,950%", articles: [] },
     ]);
   });
 
-  it("wraps items in a result", () => {
-    expect(trendingResultFromTitles(["one"]).results).toHaveLength(1);
+  it("formats negative growth", () => {
+    expect(trendingRowsToItems([["fading term", -20, 3]])[0]!.traffic).toBe("-20%");
+  });
+
+  it("nulls out missing growth and volume", () => {
+    const item = trendingRowsToItems([["bare"]])[0]!;
+    expect(item.growth).toBeNull();
+    expect(item.volume).toBeNull();
+    expect(item.traffic).toBe("");
+  });
+
+  it("skips malformed rows", () => {
+    expect(trendingRowsToItems(["nope", null, ["ok", 5, 1]])).toHaveLength(1);
+  });
+
+  it("wraps rows in a result", () => {
+    expect(trendingResultFromRows([["one", 10, 2]]).results).toHaveLength(1);
   });
 });
 

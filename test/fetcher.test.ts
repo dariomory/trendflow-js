@@ -155,29 +155,8 @@ describe("interestByRegion", () => {
   });
 });
 
-describe("trendingNow", () => {
-  it("maps the region to a property namespace key", async () => {
-    const { fetch, calls } = stubFetch({
-      "/hottrends/visualize/internal/data": { germany: ["Bundesliga", "Wetter"] },
-    });
-
-    const client = new GoogleTrendsFetcher({ fetch });
-    const result = await client.trendingNow(Region.DE);
-
-    expect(result.results.map((item) => item.title)).toEqual(["Bundesliga", "Wetter"]);
-    expect(calls.some((call) => call.url.includes("hottrends"))).toBe(true);
-  });
-
-  it("rejects worldwide", async () => {
-    const client = new GoogleTrendsFetcher({ fetch: stubFetch({}).fetch });
-    await expect(client.trendingNow(Region.WORLDWIDE)).rejects.toThrow(/specific country/);
-  });
-
-  it("rejects a region with no mapping", async () => {
-    const client = new GoogleTrendsFetcher({ fetch: stubFetch({}).fetch });
-    await expect(client.trendingNow("ZZ" as Region)).rejects.toThrow(/No trendingSearches mapping/);
-  });
-});
+// trendingNow now runs on the batchexecute RPC rather than the retired hottrends endpoint;
+// it is covered in batchexecute.test.ts.
 
 describe("relatedQueries", () => {
   it("splits ranked lists into top and rising", async () => {

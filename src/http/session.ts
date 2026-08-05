@@ -1,4 +1,5 @@
 import type { RelatedQueriesRaw } from "../parsers.js";
+import { BatchExecuteClient, type TrendingRow } from "./batchexecute.js";
 import * as ep from "./endpoints.js";
 import { TrendsJsonTransport } from "./transport.js";
 
@@ -52,6 +53,7 @@ export class GoogleTrendsHttpSession {
   kwList: string[] = [];
 
   private readonly http: TrendsJsonTransport;
+  private readonly rpc: BatchExecuteClient;
   private interestOverTimeWidget: Widget | undefined;
   private interestByRegionWidget: Widget | undefined;
   private relatedQueriesWidgets: Widget[] = [];
@@ -61,20 +63,30 @@ export class GoogleTrendsHttpSession {
     this.tz = options.tz ?? 360;
     this.geo = options.geo ?? "";
 
+    const headers = {
+      accept: "application/json, text/plain, */*",
+      "accept-language": this.hl,
+      "user-agent": DEFAULT_USER_AGENT,
+      origin: "https://trends.google.com",
+      referer: `${ep.BASE_TRENDS_URL}/explore`,
+      ...options.headers,
+    };
+    const timeout = options.timeout ?? 10_000;
+
     this.http = new TrendsJsonTransport({
       hl: this.hl,
       tz: this.tz,
-      timeout: options.timeout ?? 10_000,
+      timeout,
       retries: options.retries,
       fetch: options.fetch,
-      headers: {
-        accept: "application/json, text/plain, */*",
-        "accept-language": this.hl,
-        "user-agent": DEFAULT_USER_AGENT,
-        origin: "https://trends.google.com",
-        referer: `${ep.BASE_TRENDS_URL}/explore`,
-        ...options.headers,
-      },
+      headers,
+    });
+
+    this.rpc = new BatchExecuteClient({
+      hl: this.hl,
+      timeout,
+      headers,
+      fetch: options.fetch ?? globalThis.fetch,
     });
   }
 
@@ -184,9 +196,16 @@ export class GoogleTrendsHttpSession {
     return result;
   }
 
-  /** Trending search titles for a property namespace key (e.g. `united_states`). */
-  async trendingSearches(pn = "united_states"): Promise<string[]> {
-    const data = await this.http.requestJson(ep.TRENDING_SEARCHES, "get");
-    return [...(data[pn] ?? [])];
+  /**
+   * Trending searches for a geo, via the `batchexecute` RPC.
+   * `geo` is `"Worldwide"` or a country code such as `"US"`.
+   */
+  async trendingSearches(geo: string, window: number): Promise<TrendingRow[]> {
+    return this.rpc.trendingSearches(geo, window);
+  }
+
+  /** The full geo hierarchy Google's own region picker is built from. */
+  async geoList(): Promise<unknown> {
+    return this.rpc.geoList();
   }
 }

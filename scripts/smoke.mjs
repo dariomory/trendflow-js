@@ -48,10 +48,9 @@ await step("relatedQueries", async () => {
   return { top: r.top.slice(0, 2), rising: r.rising.slice(0, 2) };
 });
 
-// Expected to fail: Google retired this endpoint. See the README.
-await step("trendingNow (known broken upstream)", async () => {
+await step("trendingNow", async () => {
   const r = await tf.trendingNow(Region.US);
-  return { count: r.results.length, sample: r.results.slice(0, 3).map((i) => i.title) };
+  return { count: r.results.length, sample: r.results.slice(0, 3).map((i) => `${i.title} ${i.traffic}`) };
 });
 
-process.exit(failed > 1 ? 1 : 0);
+process.exit(failed > 0 ? 1 : 0);

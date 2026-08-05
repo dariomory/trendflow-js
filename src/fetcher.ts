@@ -10,25 +10,23 @@ import type {
 } from "./models.js";
 import * as parsers from "./parsers.js";
 
-/** `trendingSearches(pn)` response keys — see {@link GoogleTrendsHttpSession.trendingSearches}. */
-export const TRENDING_PN: Partial<Record<Region, string>> = {
-  [Region.US]: "united_states",
-  [Region.GB]: "united_kingdom",
-  [Region.DE]: "germany",
-  [Region.FR]: "france",
-  [Region.IT]: "italy",
-  [Region.ES]: "spain",
-  [Region.CA]: "canada",
-  [Region.AU]: "australia",
-  [Region.JP]: "japan",
-  [Region.IN]: "india",
-  [Region.BR]: "brazil",
-  [Region.MX]: "mexico",
-  [Region.NL]: "netherlands",
-  [Region.SE]: "sweden",
-  [Region.PL]: "poland",
-  [Region.TR]: "turkey",
-};
+/**
+ * Recency selector for {@link GoogleTrendsFetcher.trendingNow}. This is an undocumented
+ * Google parameter, so only the two values whose behaviour is verifiable are named:
+ * `RISING` (8) is what trends.google.com itself sends, and `TOP` (10) returns the
+ * highest-volume searches rather than the fastest-growing ones. Other values between 4 and
+ * 12 also return data over varying recency windows; pass a raw number to use one.
+ */
+export const TrendingWindow = {
+  RISING: 8,
+  TOP: 10,
+} as const;
+export type TrendingWindow = (typeof TrendingWindow)[keyof typeof TrendingWindow];
+
+/** Google's RPC takes the literal `"Worldwide"` rather than an empty geo. */
+function trendingGeo(region: string): string {
+  return region === Region.WORLDWIDE ? "Worldwide" : region;
+}
 
 export function hlFromLanguage(language: string): string {
   return language.includes("-") ? language : `${language}-US`;
@@ -48,7 +46,7 @@ export interface TrendsFetcher {
     region?: Region,
   ): Promise<InterestByRegionResult>;
 
-  trendingNow(region: Region): Promise<TrendingResult>;
+  trendingNow(region?: Region | (string & {}), options?: { window?: number }): Promise<TrendingResult>;
 
   relatedQueries(keyword: string): Promise<RelatedResult>;
 }
@@ -184,18 +182,27 @@ export class GoogleTrendsFetcher implements TrendsFetcher {
     });
   }
 
-  async trendingNow(region: Region): Promise<TrendingResult> {
-    if (region === Region.WORLDWIDE) {
-      throw new Error("Trending searches require a specific country; use e.g. Region.US");
-    }
-    const pn = TRENDING_PN[region];
-    if (pn === undefined) {
-      throw new Error(`No trendingSearches mapping for region '${region}'`);
-    }
+  /**
+   * Trending searches for a region. Unlike the Python library this accepts any country
+   * code, not a fixed list, and worldwide works too.
+   */
+  async trendingNow(
+    region: Region | (string & {}) = Region.WORLDWIDE,
+    options: { window?: number } = {},
+  ): Promise<TrendingResult> {
+    const window = options.window ?? TrendingWindow.RISING;
     return this.withRotation(async () => {
-      const titles = await this.session.trendingSearches(pn);
-      return parsers.trendingResultFromTitles(titles);
+      const rows = await this.session.trendingSearches(trendingGeo(region), window);
+      return parsers.trendingResultFromRows(rows);
     });
+  }
+
+  /**
+   * Every region Google accepts: `[code, name, slug]` per country, each with its
+   * subregions. Useful for validating a geo before querying it.
+   */
+  async geoList(): Promise<unknown> {
+    return this.withRotation(() => this.session.geoList());
   }
 
   async relatedQueries(keyword: string): Promise<RelatedResult> {

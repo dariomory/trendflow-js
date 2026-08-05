@@ -115,13 +115,30 @@ export function interestByRegionToResult(
   return { keyword, resolution, rows: interestByRegionRows(def, keyword, kwList) };
 }
 
-/** Map trending search titles to {@link TrendingItem} (this endpoint carries no traffic/articles). */
-export function trendingTitlesToItems(titles: string[]): TrendingItem[] {
-  return titles.map((title) => ({ title: String(title), traffic: "", articles: [] }));
+function formatGrowth(growth: number | null): string {
+  if (growth === null) return "";
+  return `${growth >= 0 ? "+" : "-"}${Math.abs(growth).toLocaleString("en-US")}%`;
 }
 
-export function trendingResultFromTitles(titles: string[]): TrendingResult {
-  return { results: trendingTitlesToItems(titles) };
+/** Map `[term, growthPercent, volumeIndex]` rows from the trending RPC to {@link TrendingItem}. */
+export function trendingRowsToItems(rows: unknown[]): TrendingItem[] {
+  const items: TrendingItem[] = [];
+  for (const row of rows) {
+    if (!Array.isArray(row)) continue;
+    const growth = toIntOrNull(row[1]);
+    items.push({
+      title: String(row[0] ?? ""),
+      growth,
+      volume: toIntOrNull(row[2]),
+      traffic: formatGrowth(growth),
+      articles: [],
+    });
+  }
+  return items;
+}
+
+export function trendingResultFromRows(rows: unknown[]): TrendingResult {
+  return { results: trendingRowsToItems(rows) };
 }
 
 function toIntOrNull(value: unknown): number | null {

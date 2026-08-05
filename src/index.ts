@@ -1,4 +1,4 @@
-export { GoogleTrendsFetcher, GoogleTrendsFetcher as Client } from "./fetcher.js";
+export { GoogleTrendsFetcher, GoogleTrendsFetcher as Client, TrendingWindow } from "./fetcher.js";
 export type { ClientOptions, TrendsFetcher } from "./fetcher.js";
 
 export { ExportFormat, Region, Resolution, Timeframe } from "./enums.js";

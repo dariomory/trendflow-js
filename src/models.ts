@@ -97,7 +97,13 @@ export interface InterestByRegionResult {
 /** A single trending search entry. */
 export interface TrendingItem {
   readonly title: string;
+  /** Percentage increase in searches over the window, e.g. `3950` for a 3,950% rise. */
+  readonly growth: number | null;
+  /** Relative search volume for the term, on Google's own 0-100 style scale. */
+  readonly volume: number | null;
+  /** Human-readable form of {@link growth}, e.g. `"+3,950%"`. */
   readonly traffic: string;
+  /** Always empty: the endpoint backing this data carries no article links. */
   readonly articles: string[];
 }
 

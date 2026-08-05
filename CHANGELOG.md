@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **`trendingNow()` works again**, on the `batchexecute` RPC that trends.google.com itself
+  uses. The endpoints the Python library calls are all retired by Google (404). The new
+  source is richer and less restricted:
+  - `TrendingItem` gains `growth` (percentage rise) and `volume` (relative search volume);
+    `traffic` is now the formatted growth, e.g. `"+3,950%"`. `articles` stays but is always
+    empty — this endpoint carries none.
+  - Any country code is accepted rather than 16 hardcoded ones, worldwide included, and
+    `trendingNow()` now defaults to worldwide instead of throwing.
+  - `TrendingWindow.RISING` / `.TOP` select fastest-growing versus highest-volume.
+  - No cookie needed, and it answers on IPs the widgetdata endpoints reject with `429`.
+- `geoList()` returns Google's full region hierarchy — every country with its subregions.
+- Higher-precision timeseries and keyword-scoped related queries on the same RPC are
+  **deliberately not implemented**: they require a reCAPTCHA Enterprise token. The existing
+  widgetdata-backed methods already cover that data.
+
 - **Proxy pool.** `proxies: string[]` rotates through a list of proxy URLs from any mix of
   providers, advancing on `429`, `403`, and network errors. `maxProxyAttempts` caps the
   retries, `onProxyRotate` reports them, and `currentProxy` exposes the pinned proxy.

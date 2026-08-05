@@ -190,7 +190,9 @@ headers — calls from browser JavaScript will be blocked. Use this library serv
 |-----------------------|:-----------------------:|:----------------:|
 | Interest over time    | ✅                      | ✅               |
 | Interest by region    | ✅                      | ✅               |
-| Trending now          | ⚠️ [†](#trending-now)   | ⚠️ [†](#trending-now) |
+| Trending now          | ❌ [†](#trending-now)   | ✅ [†](#trending-now) |
+| Trending growth %/volume | ❌ N/A               | ✅               |
+| Any country code      | ❌ 16 hardcoded         | ✅ all           |
 | Related queries       | ✅                      | ✅               |
 | CSV/JSON export       | ✅                      | ✅               |
 | Proxy support         | ✅                      | ✅               |
@@ -200,12 +202,49 @@ headers — calls from browser JavaScript will be blocked. Use this library serv
 | CLI                   | ✅                      | 🔜 planned       |
 
 <a id="trending-now"></a>
-† **`trendingNow()` is currently broken upstream, in both libraries.** Google retired the
-`hottrends/visualize/internal/data` endpoint it calls, along with `api/dailytrends` and
-`api/realtimetrends`; all three now return HTTP 404. Trending Now moved to an
-undocumented `batchexecute` RPC that neither library implements yet. The method is kept
-so the API surface stays stable, and will throw `ResponseError` (404) until it is reworked.
-The other three queries are verified working against live Google Trends.
+† Google retired the `hottrends/visualize/internal/data` endpoint, along with
+`api/dailytrends` and `api/realtimetrends`; all three now return HTTP 404, which is why
+`trending_now()` is broken in `trendflow-py`. This library instead calls the
+`batchexecute` RPC that trends.google.com itself uses, so `trendingNow()` works — and
+returns more than the old endpoint did:
+
+```ts
+const trending = await tf.trendingNow(Region.US);
+// { title: "fifa world cup 2026", growth: 3650, volume: 6, traffic: "+3,650%", articles: [] }
+```
+
+Three practical wins over the old endpoint:
+
+- **Growth and volume**, not just titles. `growth` is the percentage rise over the window,
+  `volume` a relative search-volume index.
+- **Any country code**, not the 16 hardcoded names the old endpoint required — and
+  worldwide works, which it previously refused.
+- **No cookie, and far looser rate limiting.** This RPC answers on IPs that get a `429`
+  from the widgetdata endpoints, so `trendingNow()` often works with no proxy at all.
+
+`articles` is always empty — this endpoint carries no article links. The field is kept for
+compatibility with `trendflow-py`.
+
+The window is selectable via `TrendingWindow`:
+
+```ts
+import { TrendingWindow } from "trendflow";
+
+await tf.trendingNow(Region.US, { window: TrendingWindow.RISING }); // default: fastest-growing
+await tf.trendingNow(Region.US, { window: TrendingWindow.TOP });    // highest-volume
+```
+
+`window` is an undocumented Google parameter. Only these two values have behaviour worth
+naming; other integers between 4 and 12 also return data over varying recency windows, and
+you can pass one as a raw number.
+
+#### Not implemented: captcha-gated RPCs
+
+The same `batchexecute` endpoint exposes a higher-precision timeseries (floating-point
+values rather than the rounded 0-100 the public API returns) and keyword-scoped related
+queries. Both require a reCAPTCHA Enterprise token and return an empty payload without one,
+so this library does not implement them — that data remains available through
+`interestOverTime()` and `relatedQueries()`, which use the documented widgetdata endpoints.
 
 ### API mapping
 
