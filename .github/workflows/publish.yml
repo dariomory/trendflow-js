@@ -29,7 +29,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Verify the tag matches package.json
+      # The tag tracks the library version. trendflow-mcp versions independently and is
+      # published from whatever its own package.json says, so it is not checked here.
+      - name: Verify the tag matches the library version
         run: |
           tag="${GITHUB_REF_NAME#v}"
           pkg="$(node -p "require('./package.json').version")"
@@ -41,8 +43,11 @@ jobs:
       - name: Quality checks
         run: npm run qa
 
-      - name: Pack
-        run: npm pack --pack-destination dist
+      - name: Pack both packages
+        run: |
+          npm pack --pack-destination dist
+          npm pack --workspace trendflow-mcp --pack-destination dist
+          ls -l dist
 
       - name: Upload distribution
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -56,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # Required for npm provenance, which signs the package with this workflow's identity.
+      # Required for npm provenance, which signs each package with this workflow's identity.
       id-token: write
       attestations: write
     environment:
@@ -83,14 +88,30 @@ jobs:
         with:
           subject-path: "dist/*.tgz"
 
-      - name: Publish
-        # --provenance publishes a signed link back to this workflow run, the npm equivalent
-        # of the attestation the PyPI workflow produces.
-        #
-        # The ./ on the path is required: npm reads a bare `dist/name.tgz` as GitHub
-        # `owner/repo` shorthand and tries to clone it over SSH.
+      # Order matters: trendflow-mcp depends on trendflow, so the library must exist on the
+      # registry first. The ./ on each path is required — npm reads a bare `dist/name.tgz`
+      # as GitHub `owner/repo` shorthand and tries to clone it over SSH.
+      - name: Publish trendflow
         run: |
-          tarball="$(ls dist/*.tgz)"
-          npm publish "./${tarball}" --provenance --access public
+          version="$(node -p "require('./package.json').version")"
+          if npm view "trendflow@${version}" version >/dev/null 2>&1; then
+            echo "trendflow@${version} is already published — skipping."
+          else
+            tarball="$(ls dist/trendflow-[0-9]*.tgz)"
+            npm publish "./${tarball}" --provenance --access public
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish trendflow-mcp
+        run: |
+          version="$(node -p "require('./mcp/package.json').version")"
+          # Skipped when unchanged, so a library-only release does not need an MCP bump.
+          if npm view "trendflow-mcp@${version}" version >/dev/null 2>&1; then
+            echo "trendflow-mcp@${version} is already published — skipping."
+          else
+            tarball="$(ls dist/trendflow-mcp-*.tgz)"
+            npm publish "./${tarball}" --provenance --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
