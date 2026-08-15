@@ -151,6 +151,8 @@ describe("rotation on failure", () => {
     spy.mockRestore();
   });
 
+  // backend "rpc" pins the source: under "auto" a failed RPC falls back to RSS, which would
+  // add a second request and mask what this test is checking.
   it("does not rotate on a 404, which a different IP cannot fix", async () => {
     const attempts: string[] = [];
     const spy = stubPoolTransport((proxy, url) => {
@@ -162,7 +164,7 @@ describe("rotation on failure", () => {
     });
 
     const client = new GoogleTrendsFetcher({ proxies: ["http://a:1", "http://b:2"] });
-    await expect(client.trendingNow(Region.US)).rejects.toThrow(/404/);
+    await expect(client.trendingNow(Region.US, { backend: "rpc" })).rejects.toThrow(/404/);
     expect(attempts).toEqual(["http://a:1"]);
     spy.mockRestore();
   });

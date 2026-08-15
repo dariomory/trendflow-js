@@ -67,9 +67,17 @@ describe("trendingNow", () => {
     const { fetchImpl } = stubTrending(TRENDING_PAYLOAD);
     const result = await new GoogleTrendsFetcher({ fetch: fetchImpl }).trendingNow(Region.US);
 
+    expect(result.source).toBe("rpc");
     expect(result.results).toEqual([
-      { title: "fifa world cup 2026", growth: 3950, volume: 7, traffic: "+3,950%", articles: [] },
-      { title: "iphone 17", growth: 850, volume: 6, traffic: "+850%", articles: [] },
+      {
+        title: "fifa world cup 2026",
+        growth: 3950,
+        volume: 7,
+        traffic: "+3,950%",
+        articles: [],
+        startedAt: null,
+      },
+      { title: "iphone 17", growth: 850, volume: 6, traffic: "+850%", articles: [], startedAt: null },
     ]);
   });
 
@@ -117,12 +125,12 @@ describe("trendingNow", () => {
   it("maps 429 and other failures onto the usual errors", async () => {
     const tooMany = stubTrending(null, 429);
     await expect(
-      new GoogleTrendsFetcher({ fetch: tooMany.fetchImpl }).trendingNow(Region.US),
+      new GoogleTrendsFetcher({ fetch: tooMany.fetchImpl }).trendingNow(Region.US, { backend: "rpc" }),
     ).rejects.toBeInstanceOf(TooManyRequestsError);
 
     const failed = stubTrending(null, 500);
     await expect(
-      new GoogleTrendsFetcher({ fetch: failed.fetchImpl }).trendingNow(Region.US),
+      new GoogleTrendsFetcher({ fetch: failed.fetchImpl }).trendingNow(Region.US, { backend: "rpc" }),
     ).rejects.toBeInstanceOf(ResponseError);
   });
 
@@ -134,7 +142,7 @@ describe("trendingNow", () => {
       })) as typeof globalThis.fetch;
 
     const error = await new GoogleTrendsFetcher({ fetch: fetchImpl })
-      .trendingNow(Region.US)
+      .trendingNow(Region.US, { backend: "rpc" })
       .catch((e: unknown) => e);
 
     expect(error).toBeInstanceOf(UnknownRpcError);

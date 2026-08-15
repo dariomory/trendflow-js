@@ -63,6 +63,35 @@ for (const q of related.top) console.log(q.term, q.value);
 for (const q of related.rising) console.log(q.term, q.breakout);
 ```
 
+## Trending backends: RPC and RSS
+
+Google exposes trending searches two ways. They are not interchangeable, so `backend` lets
+you pick:
+
+| | `"rpc"` (`batchexecute`) | `"rss"` (feed) |
+|---|---|---|
+| items | 50 | 10 |
+| payload | ~2 KB JSON | ~21 KB XML |
+| growth % and volume | ✅ | ❌ — buckets like `"2000+"` |
+| news articles | ❌ | ✅ |
+| `window` selection | ✅ | ignored by Google |
+| worldwide | ✅ | ❌ country only |
+
+```ts
+const rss = await tf.trendingNow(Region.US, { backend: "rss" });
+rss.source; // "rss"
+rss.results[0].articles;
+// [{ title: "...", url: "https://...", source: "Buffalo News", picture: "https://..." }]
+```
+
+`"auto"` (the default) tries the RPC and falls back to the feed. The RPC comes first
+deliberately: it returns five times the items with real growth figures, so defaulting to RSS
+would quietly degrade results. Reach for `"rss"` when you want the **articles** — that is the
+one thing the RPC cannot give you — or as a second opinion if the RPC id ever goes stale.
+
+Note that the feed is not a lighter path despite being a feed, and Google ignores `hours`,
+`sort` and `count` on it: it always returns the same 10 entries.
+
 ## Topics and search suggestions
 
 Google distinguishes a **search term** (the literal string) from a **topic** (the entity, in

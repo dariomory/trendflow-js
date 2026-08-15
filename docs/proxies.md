@@ -24,7 +24,7 @@ import { Client, Region, Timeframe } from "trendflow";
 const tf = new Client({
   proxies: [
     "http://user:pass@gate.decodo.com:7000",
-    "http://user:pass@pr.oxylabs.io:7777",
+    "http://user:pass@gate.decodo.com:7000",
   ],
   maxProxyAttempts: 3, // defaults to the pool size, capped at 5
   onProxyRotate: ({ attempt, error }) => console.warn(`rotated after ${attempt}:`, error),
@@ -35,7 +35,7 @@ console.log(tf.currentProxy); // the proxy that answered
 ```
 
 Proxy support needs [`undici`](https://github.com/nodejs/undici), an optional peer
-dependency — `npm install undici`. Mixing providers in one pool is fine; they are just URLs.
+dependency — `npm install undici`. Entries are just URLs, so a pool can mix providers. Repeating one rotating gateway also works: each entry gets its own connection, so it lands on a fresh exit IP.
 
 ## Rotation is per query, not per request
 
@@ -54,19 +54,15 @@ re-seeding the cookie jar each time. Two consequences:
 
 ## Where to get proxies
 
-Residential proxies are what actually clears Google's `429`. Two providers verified against
-this library:
+Residential proxies are what actually clears Google's `429`. Verified against this library:
 
 <p align="center">
-  <a href="https://decodo.com/"><img src="./proxies/decodo.svg" alt="Decodo" height="56"/></a>
-  &nbsp;&nbsp;
-  <a href="https://oxylabs.io/"><img src="./proxies/oxylabs.svg" alt="Oxylabs" height="56"/></a>
+  <a href="https://dashboard.decodo.com/register?referral_code=821058adf31e1b797a169971f79daf86fd5ebbbc"><img src="./proxies/decodo.svg" alt="Decodo" height="56"/></a>
 </p>
 
 | Provider | Notes | Endpoint format |
 |----------|-------|-----------------|
-| [Decodo](https://decodo.com/) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
-| [Oxylabs](https://oxylabs.io/) | Larger pool and better Google success rates; enterprise pricing. | `http://user:pass@pr.oxylabs.io:7777` |
+| [Decodo](https://dashboard.decodo.com/register?referral_code=821058adf31e1b797a169971f79daf86fd5ebbbc) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
 
 A shared residential pool can be exhausted for Google Trends specifically, in which case even
 a valid proxy returns `429` — that is what `maxProxyAttempts` is for.

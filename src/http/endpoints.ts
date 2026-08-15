@@ -19,4 +19,7 @@ export const REALTIME_TRENDING = `${BASE_TRENDS_URL}/api/realtimetrends`;
  */
 export const BATCH_EXECUTE = "https://trends.google.com/_/TrendsUi/data/batchexecute";
 
+/** Trending Now as an RSS feed. Independent of the RPC, and the only source with articles. */
+export const TRENDING_RSS = "https://trends.google.com/trending/rss";
+
 export const HTTP_TOO_MANY_REQUESTS = 429;

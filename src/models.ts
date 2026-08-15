@@ -94,22 +94,42 @@ export interface InterestByRegionResult {
   readonly rows: RegionalInterestRow[];
 }
 
-/** A single trending search entry. */
+/** A news article behind a trending search. Only the RSS backend reports these. */
+export interface TrendingArticle {
+  readonly title: string;
+  readonly url: string;
+  readonly source: string;
+  readonly picture: string | null;
+}
+
+/**
+ * A single trending search entry.
+ *
+ * Both backends fill `title` and `traffic`; the rest depends on which one answered, since
+ * Google exposes different fields on each. See {@link TrendingResult.source}.
+ */
 export interface TrendingItem {
   readonly title: string;
-  /** Percentage increase in searches over the window, e.g. `3950` for a 3,950% rise. */
+  /** Percentage increase over the window, e.g. `3950`. RPC backend only. */
   readonly growth: number | null;
-  /** Relative search volume for the term, on Google's own 0-100 style scale. */
+  /** Relative search volume, on Google's own 0-100 style scale. RPC backend only. */
   readonly volume: number | null;
-  /** Human-readable form of {@link growth}, e.g. `"+3,950%"`. */
+  /** Human-readable traffic: `"+3,950%"` from the RPC, `"2000+"` from RSS. */
   readonly traffic: string;
-  /** Always empty: the endpoint backing this data carries no article links. */
-  readonly articles: string[];
+  /** News articles behind the trend. RSS backend only; empty from the RPC. */
+  readonly articles: TrendingArticle[];
+  /** When Google started reporting the trend. RSS backend only. */
+  readonly startedAt: Date | null;
 }
+
+/** Which source produced a trending result. */
+export type TrendingSource = "rpc" | "rss";
 
 /** Current trending searches for a region. */
 export interface TrendingResult {
   readonly results: TrendingItem[];
+  /** Which backend answered — useful when `backend: "auto"` picked for you. */
+  readonly source: TrendingSource;
 }
 
 /**

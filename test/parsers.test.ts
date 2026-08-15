@@ -9,7 +9,6 @@ import {
   parseRisingRelated,
   parseTopRelated,
   relatedQueriesToResult,
-  trendingResultFromRows,
   trendingRowsToItems,
 } from "../src/parsers.js";
 
@@ -116,7 +115,14 @@ describe("interestByRegionRows", () => {
 describe("trending helpers", () => {
   it("maps [term, growth, volume] rows to items", () => {
     expect(trendingRowsToItems([["fifa world cup 2026", 3950, 7]])).toEqual([
-      { title: "fifa world cup 2026", growth: 3950, volume: 7, traffic: "+3,950%", articles: [] },
+      {
+        title: "fifa world cup 2026",
+        growth: 3950,
+        volume: 7,
+        traffic: "+3,950%",
+        articles: [],
+        startedAt: null,
+      },
     ]);
   });
 
@@ -135,9 +141,6 @@ describe("trending helpers", () => {
     expect(trendingRowsToItems(["nope", null, ["ok", 5, 1]])).toHaveLength(1);
   });
 
-  it("wraps rows in a result", () => {
-    expect(trendingResultFromRows([["one", 10, 2]]).results).toHaveLength(1);
-  });
 });
 
 describe("related query parsing", () => {

@@ -2,6 +2,7 @@ import { Region, Resolution, Timeframe } from "./enums.js";
 import { ResponseError, TooManyRequestsError } from "./http/errors.js";
 import { ProxyPool } from "./http/proxy.js";
 import { UnknownRpcError, type RpcIds } from "./http/batchexecute.js";
+import type { TrendingBackend, TrendingProvider } from "./http/providers.js";
 import { GoogleTrendsHttpSession } from "./http/session.js";
 import type {
   InterestByRegionResult,
@@ -48,7 +49,10 @@ export interface TrendsFetcher {
     region?: Region,
   ): Promise<InterestByRegionResult>;
 
-  trendingNow(region?: Region | (string & {}), options?: { window?: number }): Promise<TrendingResult>;
+  trendingNow(
+    region?: Region | (string & {}),
+    options?: { window?: number; backend?: TrendingBackend },
+  ): Promise<TrendingResult>;
 
   relatedQueries(keyword: string): Promise<RelatedResult>;
 
@@ -195,17 +199,44 @@ export class GoogleTrendsFetcher implements TrendsFetcher {
   }
 
   /**
-   * Trending searches for a region. Unlike the Python library this accepts any country
-   * code, not a fixed list, and worldwide works too.
+   * Trending searches for a region. Accepts any country code, not a fixed list, and
+   * worldwide works too.
+   *
+   * `backend` selects the source:
+   *
+   * - `"rpc"` (default via `"auto"`) — 50 items with growth percentages and volume.
+   * - `"rss"` — 10 items with the **news articles** behind each trend, which the RPC does
+   *   not carry, but no growth figures. `window` does not apply: Google ignores it on the
+   *   feed. There is no worldwide feed, so a country code is required.
+   * - `"auto"` — the RPC, falling back to RSS if it fails. RPC first because it returns five
+   *   times the items with real growth numbers; defaulting to RSS would quietly degrade
+   *   results.
+   *
+   * {@link TrendingResult.source} reports which one answered.
    */
   async trendingNow(
     region: Region | (string & {}) = Region.WORLDWIDE,
-    options: { window?: number } = {},
+    options: { window?: number; backend?: TrendingBackend } = {},
   ): Promise<TrendingResult> {
     const window = options.window ?? TrendingWindow.RISING;
+    const backend = options.backend ?? "auto";
+    const geo = trendingGeo(region);
+
+    const run = async (provider: TrendingProvider): Promise<TrendingResult> => ({
+      results: await provider.fetch(geo, window),
+      source: provider.source,
+    });
+
+    if (backend === "rpc") return this.withRotation(() => run(this.session.rpcTrending));
+    if (backend === "rss") return this.withRotation(() => run(this.session.rssTrending));
+
     return this.withRotation(async () => {
-      const rows = await this.session.trendingSearches(trendingGeo(region), window);
-      return parsers.trendingResultFromRows(rows);
+      try {
+        return await run(this.session.rpcTrending);
+      } catch {
+        // The feed is a genuinely separate source: different path, no RPC id to go stale.
+        return run(this.session.rssTrending);
+      }
     });
   }
 

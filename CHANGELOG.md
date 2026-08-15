@@ -17,6 +17,20 @@ Initial release — the JavaScript/TypeScript port of
 
 Not ported: the pandas `to_dataframe()` bridge (`toArray()` replaces it) and the CLI.
 
+### Trending backends
+
+`trendingNow()` takes a `backend` of `"auto"` (default), `"rpc"` or `"rss"`, behind a
+`TrendingProvider` interface, and `TrendingResult.source` reports which answered.
+
+- The RSS feed carries the **news articles** behind each trend — `TrendingItem.articles` is
+  now `TrendingArticle[]` (title, url, source, picture) instead of a permanently empty
+  `string[]`, and `startedAt` records when Google began reporting the trend.
+- `"auto"` tries the RPC first and falls back to the feed. The RPC returns 50 items with
+  growth percentages against the feed's 10 with coarse buckets, so preferring RSS would
+  quietly degrade results.
+- The feed is not a lighter path: ~21 KB of XML for 10 items versus ~2 KB of JSON for 50.
+  Google also ignores `hours`, `sort` and `count` on it.
+
 ### Topics and search suggestions
 
 - `suggestions(query)` returns `TopicSuggestion[]` — `{ mid, title, type }` — from the

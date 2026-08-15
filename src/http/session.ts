@@ -6,6 +6,8 @@ import {
   type TrendingRow,
 } from "./batchexecute.js";
 import * as ep from "./endpoints.js";
+import { RpcTrendingProvider, RssTrendingProvider, type TrendingProvider } from "./providers.js";
+import { TrendingRssClient } from "./rss.js";
 import { TrendsJsonTransport } from "./transport.js";
 
 /** Google property to search within; empty string is web search. */
@@ -61,6 +63,8 @@ export class GoogleTrendsHttpSession {
 
   private readonly http: TrendsJsonTransport;
   private readonly rpc: BatchExecuteClient;
+  readonly rpcTrending: TrendingProvider;
+  readonly rssTrending: TrendingProvider;
   private interestOverTimeWidget: Widget | undefined;
   private interestByRegionWidget: Widget | undefined;
   private relatedQueriesWidgets: Widget[] = [];
@@ -96,6 +100,11 @@ export class GoogleTrendsHttpSession {
       fetch: options.fetch ?? globalThis.fetch,
       rpcIds: options.rpcIds,
     });
+
+    this.rpcTrending = new RpcTrendingProvider(this.rpc);
+    this.rssTrending = new RssTrendingProvider(
+      new TrendingRssClient({ timeout, headers, fetch: options.fetch ?? globalThis.fetch }),
+    );
   }
 
   get cookies(): Record<string, string> {
@@ -205,7 +214,7 @@ export class GoogleTrendsHttpSession {
   }
 
   /**
-   * Trending searches for a geo, via the `batchexecute` RPC.
+   * Raw trending rows from the `batchexecute` RPC.
    * `geo` is `"Worldwide"` or a country code such as `"US"`.
    */
   async trendingSearches(geo: string, window: number): Promise<TrendingRow[]> {

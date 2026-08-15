@@ -7,7 +7,6 @@ import {
   type RelatedResult,
   type TrendingItem,
   type TopicSuggestion,
-  type TrendingResult,
   type TrendPoint,
 } from "./models.js";
 
@@ -132,14 +131,12 @@ export function trendingRowsToItems(rows: unknown[]): TrendingItem[] {
       growth,
       volume: toIntOrNull(row[2]),
       traffic: formatGrowth(growth),
+      // The RPC carries neither articles nor a start time; the RSS backend supplies those.
       articles: [],
+      startedAt: null,
     });
   }
   return items;
-}
-
-export function trendingResultFromRows(rows: unknown[]): TrendingResult {
-  return { results: trendingRowsToItems(rows) };
 }
 
 /** Map `[mid, title, type, ...]` rows from the suggestions RPC to {@link TopicSuggestion}. */

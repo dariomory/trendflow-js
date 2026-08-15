@@ -10,8 +10,10 @@ export type {
   RelatedQuery,
   RelatedResult,
   TopicSuggestion,
+  TrendingArticle,
   TrendingItem,
   TrendingResult,
+  TrendingSource,
   TrendPoint,
   TrendRecord,
   TrendRow,
@@ -19,6 +21,7 @@ export type {
 
 export { ResponseError, TooManyRequestsError } from "./http/errors.js";
 export { ProxyPool } from "./http/proxy.js";
+export type { TrendingBackend, TrendingProvider } from "./http/providers.js";
 export {
   RPC_GEO_LIST,
   RPC_SUGGESTIONS,

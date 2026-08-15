@@ -94,6 +94,35 @@ try {
 }
 ```
 
+### Trending backends: RPC and RSS
+
+Google exposes trending searches two ways. They are not interchangeable, so `backend` lets
+you pick:
+
+| | `"rpc"` (`batchexecute`) | `"rss"` (feed) |
+|---|---|---|
+| items | 50 | 10 |
+| payload | ~2 KB JSON | ~21 KB XML |
+| growth % and volume | ✅ | ❌ — buckets like `"2000+"` |
+| news articles | ❌ | ✅ |
+| `window` selection | ✅ | ignored by Google |
+| worldwide | ✅ | ❌ country only |
+
+```ts
+const rss = await tf.trendingNow(Region.US, { backend: "rss" });
+rss.source; // "rss"
+rss.results[0].articles;
+// [{ title: "...", url: "https://...", source: "Buffalo News", picture: "https://..." }]
+```
+
+`"auto"` (the default) tries the RPC and falls back to the feed. The RPC comes first
+deliberately: it returns five times the items with real growth figures, so defaulting to RSS
+would quietly degrade results. Reach for `"rss"` when you want the **articles** — that is the
+one thing the RPC cannot give you — or as a second opinion if the RPC id ever goes stale.
+
+Note that the feed is not a lighter path despite being a feed, and Google ignores `hours`,
+`sort` and `count` on it: it always returns the same 10 entries.
+
 ### Topics and search suggestions
 
 Google distinguishes a **search term** (the literal string) from a **topic** (the entity, in
@@ -142,8 +171,7 @@ import { Client, Region, Timeframe } from "trendflow";
 const tf = new Client({
   proxies: [
     "http://user:pass@gate.decodo.com:7000",
-    "http://user:pass@pr.oxylabs.io:7777",
-    "http://user:pass@brd.superproxy.io:22225",
+    "http://user:pass@gate.decodo.com:7000",
   ],
   maxProxyAttempts: 3, // defaults to the pool size, capped at 5
   onProxyRotate: ({ attempt, error }) => console.warn(`rotated after ${attempt}:`, error),
@@ -154,7 +182,7 @@ console.log(tf.currentProxy); // the proxy that answered
 ```
 
 Proxy support needs [`undici`](https://github.com/nodejs/undici), an optional peer
-dependency — `npm install undici`. Mixing providers in one pool is fine; they are just URLs.
+dependency — `npm install undici`. Entries are just URLs, so a pool can mix providers. Repeating one rotating gateway also works: each entry gets its own connection, so it lands on a fresh exit IP.
 
 **Rotation happens per query, not per request — this matters.** Google binds the `NID`
 cookie and the widget token to the IP that requested them, so a single query must complete
@@ -168,26 +196,19 @@ Rotation is skipped for errors a different IP cannot fix, such as a `404` or the
 
 #### Where to get proxies
 
-Residential proxies are what actually clears Google's `429`. Two providers verified against
-this library:
+Residential proxies are what actually clears Google's `429`. Verified against this library:
 
 <p align="center">
-  <a href="https://decodo.com/"><img src="docs/proxies/decodo.svg" alt="Decodo" height="56"/></a>
-  &nbsp;&nbsp;
-  <a href="https://oxylabs.io/"><img src="docs/proxies/oxylabs.svg" alt="Oxylabs" height="56"/></a>
+  <a href="https://dashboard.decodo.com/register?referral_code=821058adf31e1b797a169971f79daf86fd5ebbbc"><img src="docs/proxies/decodo.svg" alt="Decodo" height="56"/></a>
 </p>
 
 | Provider | Notes | Endpoint format |
 |----------|-------|-----------------|
-| [Decodo](https://decodo.com/) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
-| [Oxylabs](https://oxylabs.io/) | Larger pool and better Google success rates; enterprise pricing. | `http://user:pass@pr.oxylabs.io:7777` |
+| [Decodo](https://dashboard.decodo.com/register?referral_code=821058adf31e1b797a169971f79daf86fd5ebbbc) (formerly Smartproxy) | Cheapest entry tier; pay-as-you-go available. Used to verify this library's live tests. | `http://user:pass@gate.decodo.com:7000` |
 
 ```ts
 const tf = new Client({
-  proxies: [
-    "http://user:pass@gate.decodo.com:7000", // Decodo
-    "http://user:pass@pr.oxylabs.io:7777",   // Oxylabs
-  ],
+  proxies: ["http://user:pass@gate.decodo.com:7000"],
 });
 ```
 
@@ -228,6 +249,8 @@ Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`tre
 | Trending now | ✅ | ✅ |
 | Trending growth % and volume | ✅ | ✅ |
 | Trending for any country code | ✅ | ✅ |
+| Trending news articles (RSS) | ✅ | ✅ |
+| Selectable trending backend | ✅ | ✅ |
 | Related queries | ✅ | ✅ |
 | Search suggestions | ✅ `suggestions()` | ✅ `suggestions()` |
 | Query by topic (entity mid) | ✅ | ✅ |

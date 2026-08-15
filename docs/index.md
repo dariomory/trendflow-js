@@ -42,6 +42,8 @@ Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`tre
 | Trending now | ✅ | ✅ |
 | Trending growth % and volume | ✅ | ✅ |
 | Trending for any country code | ✅ | ✅ |
+| Trending news articles (RSS) | ✅ | ✅ |
+| Selectable trending backend | ✅ | ✅ |
 | Related queries | ✅ | ✅ |
 | Search suggestions | ✅ `suggestions()` | ✅ `suggestions()` |
 | Query by topic (entity mid) | ✅ | ✅ |
