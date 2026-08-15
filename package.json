@@ -91,5 +91,8 @@
   },
   "workspaces": [
     "mcp"
-  ]
+  ],
+  "overrides": {
+    "trendflow": "file:."
+  }
 }
