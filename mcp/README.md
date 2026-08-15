@@ -5,6 +5,10 @@ An [MCP](https://modelcontextprotocol.io) server for Google Trends, built on
 searching for, how interest changes over time, where it is concentrated, and what is surging
 right now.
 
+Self-contained: the client is bundled in, so the only runtime dependencies are the MCP SDK
+and zod. Install [`undici`](https://github.com/nodejs/undici) alongside it if you want proxy
+support.
+
 ## Install
 
 Point your MCP client at it — no install step needed:

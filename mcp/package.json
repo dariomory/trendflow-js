@@ -38,10 +38,17 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "trendflow": "^0.2.0",
     "zod": "^3.25.0"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "peerDependencies": {
+    "undici": ">=6"
+  },
+  "peerDependenciesMeta": {
+    "undici": {
+      "optional": true
+    }
   }
 }

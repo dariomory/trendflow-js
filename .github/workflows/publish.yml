@@ -88,8 +88,8 @@ jobs:
         with:
           subject-path: "dist/*.tgz"
 
-      # Order matters: trendflow-mcp depends on trendflow, so the library must exist on the
-      # registry first. The ./ on each path is required — npm reads a bare `dist/name.tgz`
+      # trendflow-mcp bundles the library rather than depending on it, so the two publish
+      # independently. The ./ on each path is required — npm reads a bare `dist/name.tgz`
       # as GitHub `owner/repo` shorthand and tries to clone it over SSH.
       - name: Publish trendflow
         run: |
