@@ -9,6 +9,7 @@ export type {
   RegionalInterestRow,
   RelatedQuery,
   RelatedResult,
+  TopicSuggestion,
   TrendingItem,
   TrendingResult,
   TrendPoint,
@@ -18,5 +19,10 @@ export type {
 
 export { ResponseError, TooManyRequestsError } from "./http/errors.js";
 export { ProxyPool } from "./http/proxy.js";
-export { RPC_GEO_LIST, RPC_TRENDING, UnknownRpcError } from "./http/batchexecute.js";
+export {
+  RPC_GEO_LIST,
+  RPC_SUGGESTIONS,
+  RPC_TRENDING,
+  UnknownRpcError,
+} from "./http/batchexecute.js";
 export type { RpcIds } from "./http/batchexecute.js";

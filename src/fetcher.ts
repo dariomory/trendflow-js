@@ -7,6 +7,7 @@ import type {
   InterestByRegionResult,
   InterestOverTimeResult,
   RelatedResult,
+  TopicSuggestion,
   TrendingResult,
 } from "./models.js";
 import * as parsers from "./parsers.js";
@@ -50,6 +51,8 @@ export interface TrendsFetcher {
   trendingNow(region?: Region | (string & {}), options?: { window?: number }): Promise<TrendingResult>;
 
   relatedQueries(keyword: string): Promise<RelatedResult>;
+
+  suggestions(query: string): Promise<TopicSuggestion[]>;
 }
 
 export interface ClientOptions {
@@ -204,6 +207,21 @@ export class GoogleTrendsFetcher implements TrendsFetcher {
       const rows = await this.session.trendingSearches(trendingGeo(region), window);
       return parsers.trendingResultFromRows(rows);
     });
+  }
+
+  /**
+   * Entity suggestions for a partial query — the picker behind the UI's "Topic" results.
+   *
+   * Pass a returned `mid` as a keyword to any query method to measure the **topic** rather
+   * than the literal phrase; a topic aggregates every spelling and translation of the same
+   * concept, so it usually scores far higher than the raw string.
+   *
+   * Needs no cookie and no proxy: this RPC answers on IPs the widgetdata endpoints reject.
+   */
+  async suggestions(query: string): Promise<TopicSuggestion[]> {
+    return this.withRotation(async () =>
+      parsers.suggestionRowsToTopics(await this.session.suggestions(query)),
+    );
   }
 
   /**

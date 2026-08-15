@@ -6,6 +6,7 @@ import {
   type RelatedQuery,
   type RelatedResult,
   type TrendingItem,
+  type TopicSuggestion,
   type TrendingResult,
   type TrendPoint,
 } from "./models.js";
@@ -139,6 +140,17 @@ export function trendingRowsToItems(rows: unknown[]): TrendingItem[] {
 
 export function trendingResultFromRows(rows: unknown[]): TrendingResult {
   return { results: trendingRowsToItems(rows) };
+}
+
+/** Map `[mid, title, type, ...]` rows from the suggestions RPC to {@link TopicSuggestion}. */
+export function suggestionRowsToTopics(rows: unknown[]): TopicSuggestion[] {
+  const out: TopicSuggestion[] = [];
+  for (const row of rows) {
+    if (!Array.isArray(row) || typeof row[0] !== "string") continue;
+    const type = typeof row[2] === "string" && row[2].length > 0 ? row[2] : null;
+    out.push({ mid: row[0], title: String(row[1] ?? ""), type });
+  }
+  return out;
 }
 
 function toIntOrNull(value: unknown): number | null {

@@ -15,11 +15,14 @@ import { HTTP_TOO_MANY_REQUESTS } from "./endpoints.js";
 export const RPC_TRENDING = "fXqlme";
 /** `DqDTgb`: the full geo hierarchy — every country with its subregions. */
 export const RPC_GEO_LIST = "DqDTgb";
+/** `hzg6Ed`: entity autocomplete — the picker behind the UI's "Topic" suggestions. */
+export const RPC_SUGGESTIONS = "hzg6Ed";
 
 /** Runtime overrides for the pinned RPC identifiers. */
 export interface RpcIds {
   trending?: string;
   geoList?: string;
+  suggestions?: string;
 }
 
 /**
@@ -42,6 +45,9 @@ export class UnknownRpcError extends Error {
 
 /** One `[term, growthPercent, volumeIndex]` row from the trending RPC. */
 export type TrendingRow = [string, number, number];
+
+/** One `[mid, title, type, imageUrl, boolean]` row from the suggestions RPC. */
+export type SuggestionRow = [string, string, string, string?, boolean?];
 
 export interface BatchExecuteOptions {
   hl: string;
@@ -88,6 +94,7 @@ export class BatchExecuteClient {
   private readonly fetchImpl: typeof globalThis.fetch;
   readonly trendingRpcId: string;
   readonly geoListRpcId: string;
+  readonly suggestionsRpcId: string;
 
   constructor(options: BatchExecuteOptions) {
     this.hl = options.hl;
@@ -96,6 +103,7 @@ export class BatchExecuteClient {
     this.fetchImpl = options.fetch;
     this.trendingRpcId = options.rpcIds?.trending ?? RPC_TRENDING;
     this.geoListRpcId = options.rpcIds?.geoList ?? RPC_GEO_LIST;
+    this.suggestionsRpcId = options.rpcIds?.suggestions ?? RPC_SUGGESTIONS;
   }
 
   /**
@@ -161,5 +169,12 @@ export class BatchExecuteClient {
   /** The full geo hierarchy: `[code, name, slug]` per country, each with its subregions. */
   async geoList(): Promise<unknown> {
     return this.call(this.geoListRpcId, [this.hl, 1, 1]);
+  }
+
+  /** Entity suggestions for a partial query. Needs no cookie and no reCAPTCHA token. */
+  async suggestions(query: string): Promise<SuggestionRow[]> {
+    const data = await this.call(this.suggestionsRpcId, [query, this.hl]);
+    const rows = (data as any)?.[0];
+    return Array.isArray(rows) ? (rows as SuggestionRow[]) : [];
   }
 }

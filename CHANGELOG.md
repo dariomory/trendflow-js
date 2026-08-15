@@ -17,6 +17,16 @@ Initial release — the JavaScript/TypeScript port of
 
 Not ported: the pandas `to_dataframe()` bridge (`toArray()` replaces it) and the CLI.
 
+### Topics and search suggestions
+
+- `suggestions(query)` returns `TopicSuggestion[]` — `{ mid, title, type }` — from the
+  entity picker the Trends UI uses. Needs no cookie and no reCAPTCHA token, and answers on
+  IPs the widgetdata endpoints reject.
+- Any query method already accepts a `mid` in place of a keyword, which measures the
+  **topic** (every spelling and translation of a concept) rather than the literal string.
+  This worked before but was undocumented and undiscoverable; `suggestions()` is what makes
+  it usable.
+
 ### Trending searches
 
 `trendingNow()` runs on the `batchexecute` RPC that trends.google.com itself uses, rather

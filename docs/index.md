@@ -43,6 +43,8 @@ Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`tre
 | Trending growth % and volume | ✅ | ✅ |
 | Trending for any country code | ✅ | ✅ |
 | Related queries | ✅ | ✅ |
+| Search suggestions | ✅ `suggestions()` | ✅ `suggestions()` |
+| Query by topic (entity mid) | ✅ | ✅ |
 | CSV / JSON export | ✅ | ✅ |
 | Rotating proxy pool | ✅ | ✅ |
 | Browser User-Agent by default | ✅ | ✅ |

@@ -2,7 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import { Region } from "../src/enums.js";
 import { GoogleTrendsFetcher, TrendingWindow } from "../src/fetcher.js";
-import { parseBatchExecute, RPC_TRENDING, UnknownRpcError } from "../src/http/batchexecute.js";
+import {
+  parseBatchExecute,
+  RPC_SUGGESTIONS,
+  RPC_TRENDING,
+  UnknownRpcError,
+} from "../src/http/batchexecute.js";
 import { ResponseError, TooManyRequestsError } from "../src/http/errors.js";
 
 /** The real envelope shape: `)]}'` then repeating `<length>\n<json>` frames. */
@@ -159,5 +164,62 @@ describe("trendingNow", () => {
     // A single request: no /explore/?geo= cookie round-trip beforehand.
     expect(calls).toHaveLength(1);
     expect(calls[0]!.url).toContain("batchexecute");
+  });
+});
+
+const SUGGESTION_PAYLOAD = [
+  [
+    ["/m/0mkz", "Artificial intelligence", "Professional field", "https://img", false],
+    ["/m/05p0rrx", "Bitcoin", "Cryptocurrency", "https://img", false],
+    ["/m/07c1v", "Technology", "", "https://img", false],
+  ],
+];
+
+function stubSuggestions(payload: unknown) {
+  const calls: Array<{ url: string; body: string }> = [];
+  const fetchImpl = (async (input: any, init: any) => {
+    calls.push({ url: String(input), body: String(init?.body ?? "") });
+    return new Response(envelope(RPC_SUGGESTIONS, payload), {
+      headers: { "content-type": "application/json" },
+    });
+  }) as typeof globalThis.fetch;
+  return { fetchImpl, calls };
+}
+
+describe("suggestions", () => {
+  it("maps rows to mid, title and type", async () => {
+    const { fetchImpl } = stubSuggestions(SUGGESTION_PAYLOAD);
+    const result = await new GoogleTrendsFetcher({ fetch: fetchImpl }).suggestions("ai");
+
+    expect(result).toEqual([
+      { mid: "/m/0mkz", title: "Artificial intelligence", type: "Professional field" },
+      { mid: "/m/05p0rrx", title: "Bitcoin", type: "Cryptocurrency" },
+      { mid: "/m/07c1v", title: "Technology", type: null },
+    ]);
+  });
+
+  it("sends the query and language", async () => {
+    const { fetchImpl, calls } = stubSuggestions(SUGGESTION_PAYLOAD);
+    await new GoogleTrendsFetcher({ fetch: fetchImpl }).suggestions("bitcoin");
+
+    expect(calls[0]!.url).toContain(`rpcids=${RPC_SUGGESTIONS}`);
+    expect(decodeURIComponent(calls[0]!.body)).toContain('[\\"bitcoin\\",\\"en-US\\"]');
+  });
+
+  it("returns an empty list when nothing matches", async () => {
+    const { fetchImpl } = stubSuggestions([[]]);
+    expect(await new GoogleTrendsFetcher({ fetch: fetchImpl }).suggestions("zzz")).toEqual([]);
+  });
+
+  it("skips malformed rows", async () => {
+    const { fetchImpl } = stubSuggestions([["nope", null, ["/m/1", "Ok", "Type"]]]);
+    const result = await new GoogleTrendsFetcher({ fetch: fetchImpl }).suggestions("x");
+    expect(result).toEqual([{ mid: "/m/1", title: "Ok", type: "Type" }]);
+  });
+
+  it("needs no cookie round-trip", async () => {
+    const { fetchImpl, calls } = stubSuggestions(SUGGESTION_PAYLOAD);
+    await new GoogleTrendsFetcher({ fetch: fetchImpl }).suggestions("ai");
+    expect(calls).toHaveLength(1);
   });
 });

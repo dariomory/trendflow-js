@@ -1,5 +1,10 @@
 import type { RelatedQueriesRaw } from "../parsers.js";
-import { BatchExecuteClient, type RpcIds, type TrendingRow } from "./batchexecute.js";
+import {
+  BatchExecuteClient,
+  type RpcIds,
+  type SuggestionRow,
+  type TrendingRow,
+} from "./batchexecute.js";
 import * as ep from "./endpoints.js";
 import { TrendsJsonTransport } from "./transport.js";
 
@@ -210,5 +215,10 @@ export class GoogleTrendsHttpSession {
   /** The full geo hierarchy Google's own region picker is built from. */
   async geoList(): Promise<unknown> {
     return this.rpc.geoList();
+  }
+
+  /** Entity suggestions for a partial query. */
+  async suggestions(query: string): Promise<SuggestionRow[]> {
+    return this.rpc.suggestions(query);
   }
 }
