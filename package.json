@@ -1,6 +1,6 @@
 {
   "name": "trendflow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Type-safe Google Trends API client for JavaScript & TypeScript — interest over time, by region, trending now, related queries. ESM + CJS, zero dependencies, proxy rotation.",
   "keywords": [
     "google-trends",
@@ -63,7 +63,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "qa": "npm run typecheck && npm run test && npm run build",
+    "qa": "npm run typecheck && npm run test && npm run build && npm run build -w trendflow-mcp && npm run typecheck -w trendflow-mcp && npm run test -w trendflow-mcp",
     "prepublishOnly": "npm run qa",
     "smoke": "node scripts/smoke.mjs",
     "docs": "typedoc",
@@ -88,5 +88,8 @@
     "undici": {
       "optional": true
     }
-  }
+  },
+  "workspaces": [
+    "mcp"
+  ]
 }

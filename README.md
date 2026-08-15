@@ -238,6 +238,20 @@ Every method except `export()` works anywhere `fetch` does, but Google Trends se
 headers — calls from browser JavaScript will be blocked. Use this library server-side
 (Route Handlers, Server Actions, API routes) and pass results to the client.
 
+## MCP server
+
+An MCP server ships alongside the library as [`trendflow-mcp`](./mcp), so agents can query
+Google Trends directly. It's a separate package — the library keeps its zero runtime
+dependencies.
+
+```bash
+claude mcp add trendflow -- npx -y trendflow-mcp
+```
+
+Six tools (`search_topics`, `get_interest_over_time`, `get_interest_by_region`,
+`get_related_queries`, `get_trending_now`, `research_trend`) and two resources. See
+[mcp/README.md](./mcp/README.md).
+
 ## Feature Parity
 
 Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`trendflow`](https://github.com/dariomory/trendflow-js) 0.1.0. Versions are independent; each changelog cross-references the sibling release.
@@ -262,6 +276,7 @@ Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`tre
 | pandas DataFrame | ✅ `to_dataframe()` | ❌ N/A |
 | Plain-object rows | ❌ N/A | ✅ `toArray()` |
 | ESM + CommonJS + types | ❌ N/A | ✅ |
+| MCP server | 🔜 planned | ✅ [`trendflow-mcp`](https://www.npmjs.com/package/trendflow-mcp) |
 | CLI | ✅ | 🔜 planned |
 
 ### Trending now

@@ -1,0 +1,47 @@
+{
+  "name": "trendflow-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Google Trends — trending searches, topic lookup, interest over time, by region, and related queries.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "google-trends",
+    "trends",
+    "agent",
+    "llm",
+    "seo"
+  ],
+  "license": "MIT",
+  "author": "Dario Mory <dario@mory.dev> (https://mory.dev)",
+  "homepage": "https://github.com/dariomory/trendflow-js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dariomory/trendflow-js.git",
+    "directory": "mcp"
+  },
+  "type": "module",
+  "bin": {
+    "trendflow-mcp": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "trendflow": "^0.2.0",
+    "zod": "^3.25.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

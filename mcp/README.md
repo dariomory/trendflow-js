@@ -1,0 +1,100 @@
+# trendflow-mcp
+
+An [MCP](https://modelcontextprotocol.io) server for Google Trends, built on
+[`trendflow`](https://www.npmjs.com/package/trendflow). Lets an agent ask what people are
+searching for, how interest changes over time, where it is concentrated, and what is surging
+right now.
+
+## Install
+
+Point your MCP client at it — no install step needed:
+
+```json
+{
+  "mcpServers": {
+    "trendflow": {
+      "command": "npx",
+      "args": ["-y", "trendflow-mcp"]
+    }
+  }
+}
+```
+
+Claude Code:
+
+```bash
+claude mcp add trendflow -- npx -y trendflow-mcp
+```
+
+Requires Node.js 18+.
+
+## Tools
+
+| Tool | What it answers |
+|------|-----------------|
+| `search_topics` | "What is the Trends topic id for X?" — **call this first** |
+| `get_interest_over_time` | "How popular is X?" / "How do X and Y compare?" |
+| `get_interest_by_region` | "Where is X popular?" |
+| `get_related_queries` | "What else do people search alongside X?" |
+| `get_trending_now` | "What's trending right now?" (and, via RSS, *why*) |
+| `research_trend` | All of the above for one term, in a single call |
+
+### Why `search_topics` matters
+
+Google distinguishes a **search term** (the literal string) from a **topic** (the entity, in
+every spelling and language). Passing a topic id gives a materially different answer:
+
+```
+get_interest_over_time(["/m/0mkz", "artificial intelligence"])
+→ { "/m/0mkz": 62, "artificial intelligence": 1 }
+```
+
+The topic scores 62 where the literal phrase scores 1, because it aggregates every phrasing
+and translation people actually search. `search_topics` is also the cheapest call here — no
+cookie, no proxy, and it answers on IPs that rate-limit everything else.
+
+## Resources
+
+- `trendflow://regions` — every geography Google accepts, with subregions.
+- `trendflow://capabilities` — what the server can answer, and the caveats that affect how
+  results should be read.
+
+## Configuration
+
+MCP clients launch servers with an `env` block, so configuration is environment variables:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `TRENDFLOW_PROXIES` | — | Comma-separated proxy URLs to rotate through |
+| `TRENDFLOW_TIMEOUT` | `30000` | Per-request timeout in milliseconds |
+| `TRENDFLOW_LANGUAGE` | `en` | Language tag, e.g. `de-DE` |
+
+```json
+{
+  "mcpServers": {
+    "trendflow": {
+      "command": "npx",
+      "args": ["-y", "trendflow-mcp"],
+      "env": { "TRENDFLOW_PROXIES": "http://user:pass@gate.decodo.com:7000" }
+    }
+  }
+}
+```
+
+## Rate limits
+
+Google rate-limits by exit IP, so `HTTP 429` is common and does not mean the query was
+wrong. `search_topics` and `get_trending_now` answer on IPs that reject the others. For the
+rest, set `TRENDFLOW_PROXIES` — see the
+[proxy docs](https://github.com/dariomory/trendflow-js#using-a-proxy-pool).
+
+## Reading the numbers
+
+Trends values are **normalized relative interest** (0–100 within one result set), never
+absolute search volume, and are only comparable inside a single result. The server states
+this in its instructions and in `trendflow://capabilities`, because models otherwise report
+them as search counts.
+
+## License
+
+MIT

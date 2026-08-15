@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.2.0
+
+Reaches feature parity with [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0.
+
+### Added
+
+- **Search suggestions.** `suggestions(query)` returns `TopicSuggestion[]` from the entity
+  picker the Trends UI uses. Needs no cookie and no reCAPTCHA token, and answers on IPs the
+  widgetdata endpoints reject. Any query method already accepted a topic `mid` in place of a
+  keyword; this makes that usable.
+- **RSS trending backend.** `trendingNow(region, { backend })` takes `"auto"` (default),
+  `"rpc"`, or `"rss"`, behind a `TrendingProvider` interface. The feed carries the news
+  articles behind each trend, which the RPC does not.
+- `geoList()` returns Google's full region hierarchy.
+- `UnknownRpcError` and the `rpcIds` option, for patching a renamed `batchexecute` RPC id
+  without waiting for a release.
+- A rotating proxy pool: `proxies`, `maxProxyAttempts`, `onProxyRotate`, `currentProxy`.
+- An MCP server, published separately as `trendflow-mcp`.
+
+### Changed — breaking
+
+- `TrendingItem.articles` is now `TrendingArticle[]` (title, url, source, picture) instead of
+  a permanently empty `string[]`, and `TrendingItem` gains `startedAt`.
+- `TrendingResult` gains `source`, reporting which backend answered.
+- `trendingNow()` accepts any country code rather than a fixed list, and defaults to
+  worldwide instead of throwing.
+
+### Fixed
+
+- A browser `User-Agent` is sent by default. Without one Google answers the widgetdata
+  endpoints with HTTP 429 regardless of request volume.
+
 ## 0.1.0
 
 Initial release — the JavaScript/TypeScript port of

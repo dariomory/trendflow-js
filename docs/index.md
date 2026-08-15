@@ -55,4 +55,5 @@ Current: [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0 · [`tre
 | pandas DataFrame | ✅ `to_dataframe()` | ❌ N/A |
 | Plain-object rows | ❌ N/A | ✅ `toArray()` |
 | ESM + CommonJS + types | ❌ N/A | ✅ |
+| MCP server | 🔜 planned | ✅ [`trendflow-mcp`](https://www.npmjs.com/package/trendflow-mcp) |
 | CLI | ✅ | 🔜 planned |

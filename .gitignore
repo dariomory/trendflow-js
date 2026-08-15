@@ -10,3 +10,6 @@ t.mjs
 har.mjs
 smoke-*.mjs
 site/
+
+# workspace build output
+mcp/dist/
