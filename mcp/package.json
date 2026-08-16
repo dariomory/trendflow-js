@@ -1,6 +1,7 @@
 {
   "name": "trendflow-mcp",
   "version": "0.1.0",
+  "mcpName": "dev.mory/trendflow",
   "description": "MCP server for Google Trends — trending searches, topic lookup, interest over time, by region, and related queries.",
   "keywords": [
     "mcp",

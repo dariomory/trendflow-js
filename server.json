@@ -14,15 +14,5 @@
       "type": "streamable-http",
       "url": "https://trendflow.mory.dev/mcp"
     }
-  ],
-  "packages": [
-    {
-      "registryType": "npm",
-      "identifier": "trendflow-mcp",
-      "version": "0.1.0",
-      "transport": {
-        "type": "stdio"
-      }
-    }
   ]
 }
