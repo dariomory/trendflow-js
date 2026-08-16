@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "dev.mory/trendflow",
+  "title": "TrendFlow",
+  "description": "Google Trends research: interest over time, interest by region, related queries, topic lookup, and what is trending now.",
+  "version": "0.1.0",
+  "websiteUrl": "https://trendflow.mory.dev/docs/mcp",
+  "repository": {
+    "url": "https://github.com/dariomory/trendflow-js",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://trendflow.mory.dev/mcp"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "trendflow-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
