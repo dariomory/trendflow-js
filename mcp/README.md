@@ -9,6 +9,9 @@ Self-contained: the client is bundled in, so the only runtime dependencies are t
 and zod. Install [`undici`](https://github.com/nodejs/undici) alongside it if you want proxy
 support.
 
+📖 **Documentation: [trendflow.mory.dev/docs/mcp](https://trendflow.mory.dev/docs/mcp)** — or skip
+the install entirely and point your client at the hosted server.
+
 ## Install
 
 Point your MCP client at it — no install step needed:

@@ -24,7 +24,7 @@
   ],
   "license": "MIT",
   "author": "Dario Mory <dario@mory.dev> (https://mory.dev)",
-  "homepage": "https://github.com/dariomory/trendflow-js",
+  "homepage": "https://trendflow.mory.dev/docs/js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/dariomory/trendflow-js.git"

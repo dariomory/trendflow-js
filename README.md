@@ -6,13 +6,17 @@
 
 [![npm version](https://img.shields.io/npm/v/trendflow.svg)](https://www.npmjs.com/package/trendflow)
 [![CI](https://github.com/dariomory/trendflow-js/actions/workflows/ci.yml/badge.svg)](https://github.com/dariomory/trendflow-js/actions/workflows/ci.yml)
-[![docs](https://img.shields.io/badge/docs-github.io-blue)](https://dariomory.github.io/trendflow-js/)
+[![docs](https://img.shields.io/badge/docs-trendflow.mory.dev-0b6e6e)](https://trendflow.mory.dev/docs/js)
 
 A type-safe JavaScript/TypeScript library for querying and exporting Google Trends data.
 The JavaScript port of [`trendflow-py`](https://github.com/dariomory/trendflow).
 
+📖 **Documentation: [trendflow.mory.dev/docs/js](https://trendflow.mory.dev/docs/js)** — guides for
+both libraries, plus a hosted MCP server for ChatGPT, Claude, and Cursor.
+
 - GitHub: [https://github.com/dariomory/trendflow-js/](https://github.com/dariomory/trendflow-js/)
 - npm package: [https://www.npmjs.com/package/trendflow](https://www.npmjs.com/package/trendflow)
+- API reference: [https://dariomory.github.io/trendflow-js/](https://dariomory.github.io/trendflow-js/)
 - Python sibling: [https://pypi.org/project/trendflow-py/](https://pypi.org/project/trendflow-py/)
 - Created by: **[Dario Mory](https://mory.dev)** | GitHub [https://github.com/dariomory](https://github.com/dariomory)
 - Free software: MIT License
