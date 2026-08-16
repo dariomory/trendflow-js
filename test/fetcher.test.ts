@@ -116,6 +116,27 @@ describe("interestOverTime", () => {
   });
 });
 
+describe("headers option", () => {
+  it("overrides the default user-agent on every request", async () => {
+    const { fetch } = stubFetch({
+      "/api/explore": EXPLORE_WIDGETS,
+      "/widgetdata/multiline": { default: { timelineData: [] } },
+    });
+
+    const agents: (string | null)[] = [];
+    const spy: typeof globalThis.fetch = async (input, init) => {
+      agents.push(new Headers(init?.headers).get("user-agent"));
+      return fetch(input, init);
+    };
+
+    const client = new GoogleTrendsFetcher({ fetch: spy, headers: { "user-agent": "TrendFlow/1" } });
+    await client.interestOverTime(["Python"], Timeframe.PAST_YEAR, Region.US);
+
+    expect(agents.length).toBeGreaterThan(0);
+    expect(agents.every((agent) => agent === "TrendFlow/1")).toBe(true);
+  });
+});
+
 describe("interestByRegion", () => {
   it("parses geoMapData into rows", async () => {
     const { fetch } = stubFetch({

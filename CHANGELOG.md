@@ -1,6 +1,20 @@
 # Changelog
 
-## 0.2.0
+## Unreleased
+
+### Added
+
+- **HTTP transport for `trendflow-mcp`.** `--http[=PORT]`, or `TRENDFLOW_HTTP_PORT`, serves the
+  same tools over Streamable HTTP at `/mcp` instead of stdio, for self-hosting. Binds loopback
+  by default (`TRENDFLOW_HTTP_HOST`) because it carries no authentication, and serves one
+  request at a time — see the caveats in `mcp/README.md`. stdio remains the default.
+- `headers` on `ClientOptions`, merged over the browser-like defaults. Chiefly for varying
+  `user-agent`; `SessionOptions` already accepted it but nothing public reached it.
+
+### Fixed
+
+- Documented that `TrendingItem.articles` is empty only on the RPC backend. The `"rss"` backend
+  has carried articles since 0.2.0, but README and docs still said the field is always empty.
 
 Reaches feature parity with [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0.
 

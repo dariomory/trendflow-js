@@ -72,6 +72,8 @@ MCP clients launch servers with an `env` block, so configuration is environment 
 | `TRENDFLOW_PROXIES` | — | Comma-separated proxy URLs to rotate through |
 | `TRENDFLOW_TIMEOUT` | `30000` | Per-request timeout in milliseconds |
 | `TRENDFLOW_LANGUAGE` | `en` | Language tag, e.g. `de-DE` |
+| `TRENDFLOW_HTTP_PORT` | — | Serve Streamable HTTP on this port instead of stdio |
+| `TRENDFLOW_HTTP_HOST` | `127.0.0.1` | Interface to bind in HTTP mode |
 
 ```json
 {
@@ -84,6 +86,35 @@ MCP clients launch servers with an `env` block, so configuration is environment 
   }
 }
 ```
+
+## HTTP mode
+
+For self-hosting, `--http` serves the same tools over Streamable HTTP at `/mcp` instead of
+stdio:
+
+```bash
+npx trendflow-mcp --http=8080
+```
+
+`--http` alone uses port 3000, and setting `TRENDFLOW_HTTP_PORT` enables HTTP mode on its own.
+Point any Streamable HTTP client at it:
+
+```json
+{
+  "mcpServers": {
+    "trendflow": { "url": "http://127.0.0.1:8080/mcp" }
+  }
+}
+```
+
+Two things to know before exposing it:
+
+- **There is no authentication.** It binds to loopback by default for that reason. Set
+  `TRENDFLOW_HTTP_HOST=0.0.0.0` only behind a proxy that authenticates for you.
+- **Requests are served one at a time.** The process holds a single Google session whose
+  widget tokens a concurrent query would overwrite, and Google rate-limits by exit IP, so
+  parallelism would buy `429`s rather than throughput. This is a single-tenant server; serving
+  many users needs a pool of clients, one per in-flight query.
 
 ## Rate limits
 

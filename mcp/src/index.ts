@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 /**
- * MCP server exposing Google Trends via the `trendflow` client, over stdio.
+ * MCP server exposing Google Trends via the `trendflow` client.
+ *
+ * Speaks stdio by default; `--http` (or `TRENDFLOW_HTTP_PORT`) serves Streamable HTTP instead,
+ * for self-hosting. See `./http.ts`.
  *
  * Configuration comes from the environment, because MCP clients launch servers with an
  * `env` block rather than command-line flags:
  *
- *   TRENDFLOW_PROXIES   comma-separated proxy URLs to rotate through
- *   TRENDFLOW_TIMEOUT   per-request timeout in milliseconds (default 30000)
- *   TRENDFLOW_LANGUAGE  language tag, e.g. "en" (default) or "de-DE"
+ *   TRENDFLOW_PROXIES    comma-separated proxy URLs to rotate through
+ *   TRENDFLOW_TIMEOUT    per-request timeout in milliseconds (default 30000)
+ *   TRENDFLOW_LANGUAGE   language tag, e.g. "en" (default) or "de-DE"
+ *   TRENDFLOW_HTTP_PORT  serve Streamable HTTP on this port instead of stdio
+ *   TRENDFLOW_HTTP_HOST  interface to bind in HTTP mode (default 127.0.0.1)
  */
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -16,6 +21,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { Client } from "trendflow";
 
+import { DEFAULT_HTTP_HOST, MCP_PATH, resolveHttpPort, startHttpServer } from "./http.js";
 import { registerResources, registerTools } from "./tools.js";
 
 /** Build the client from the environment. */
@@ -57,8 +63,18 @@ export function createServer(client: Client): McpServer {
 async function main(): Promise<void> {
   // One client for the process: Google binds its cookie and widget token to the exit IP,
   // and a fresh client per call would also reset the proxy pool's pinned proxy.
-  const server = createServer(clientFromEnv());
-  await server.connect(new StdioServerTransport());
+  const client = clientFromEnv();
+
+  const port = resolveHttpPort(process.argv.slice(2), process.env);
+  if (port !== undefined) {
+    const host = process.env.TRENDFLOW_HTTP_HOST || DEFAULT_HTTP_HOST;
+    await startHttpServer(() => createServer(client), { port, host });
+    // stderr, so the banner never lands in a stdio client's protocol stream.
+    console.error(`trendflow-mcp listening on http://${host}:${port}${MCP_PATH}`);
+    return;
+  }
+
+  await createServer(client).connect(new StdioServerTransport());
 }
 
 /** True when this file is the process entry point rather than an import. */

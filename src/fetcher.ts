@@ -80,6 +80,12 @@ export interface ClientOptions {
   maxProxyAttempts?: number;
   /** Called when a query fails and the pool rotates. Useful for logging. */
   onProxyRotate?: (info: { attempt: number; error: unknown }) => void;
+  /**
+   * Extra request headers, merged over the browser-like defaults. Chiefly useful for varying
+   * `user-agent`: Google answers the widgetdata endpoints with 429 when the agent string looks
+   * like a Node HTTP client, and a server running several sessions wants them to differ.
+   */
+  headers?: Record<string, string>;
   /** Injectable `fetch`, for proxies, logging, or tests. Defaults to the global. */
   fetch?: typeof globalThis.fetch;
   /**
@@ -126,6 +132,7 @@ export class GoogleTrendsFetcher implements TrendsFetcher {
       tz: 360,
       timeout,
       retries,
+      headers: options.headers,
       fetch: this.pool ? this.pool.asFetch() : fetch,
       rpcIds: options.rpcIds,
     });

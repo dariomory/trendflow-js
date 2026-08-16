@@ -301,8 +301,8 @@ Three practical wins over the old endpoint:
 - **No cookie, and far looser rate limiting.** This RPC answers on IPs that get a `429`
   from the widgetdata endpoints, so `trendingNow()` often works with no proxy at all.
 
-`articles` is always empty — this endpoint carries no article links. The field is kept for
-compatibility with [`trendflow-py`](https://github.com/dariomory/trendflow).
+`articles` is empty on this backend — the RPC carries no article links. Pass
+`{ backend: "rss" }` to get the news articles behind each trend instead.
 
 The window is selectable via `TrendingWindow`:
 
