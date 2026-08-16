@@ -2,16 +2,18 @@
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": ["src/index.ts"],
   "out": "site",
-  "name": "Trendflow JS",
+  "name": "Trendflow JS — API Reference",
   "readme": "docs/index.md",
-  "projectDocuments": ["docs/usage.md", "docs/proxies.md"],
   "includeVersion": true,
   "excludePrivate": true,
   "excludeInternal": true,
   "sortEntryPoints": false,
+  "hostedBaseUrl": "https://dariomory.github.io/trendflow-js/",
+  "customFooterHtml": "Guides and canonical documentation: <a href=\"https://trendflow.mory.dev/docs/js\">trendflow.mory.dev/docs/js</a>",
   "navigationLinks": {
+    "Guides": "https://trendflow.mory.dev/docs/js",
     "GitHub": "https://github.com/dariomory/trendflow-js",
     "npm": "https://www.npmjs.com/package/trendflow",
-    "Python sibling": "https://dariomory.github.io/trendflow/"
+    "Python sibling": "https://trendflow.mory.dev/docs/python"
   }
 }
