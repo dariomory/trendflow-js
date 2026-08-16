@@ -43,8 +43,16 @@ jobs:
         run: npm ci
 
       # Type check, unit tests, and build. The unit tests never touch the network.
-      - name: Quality checks
-        run: npm run qa
+      # The library itself has no dependencies and still supports Node 18.
+      - name: Quality checks (library)
+        run: npm run typecheck && npm run test && npm run build
+
+      # The MCP server needs Node 20+: its Streamable HTTP transport comes from the MCP SDK,
+      # which reaches @hono/node-server, and that requires >=20. The SDK's own `engines` says
+      # >=18, which is why this only shows up as a test failure rather than an install error.
+      - name: Quality checks (MCP server)
+        if: matrix.node-version != '18.x'
+        run: npm run build -w trendflow-mcp && npm run typecheck -w trendflow-mcp && npm run test -w trendflow-mcp
 
   docs:
     name: Docs build

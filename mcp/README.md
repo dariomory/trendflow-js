@@ -33,7 +33,8 @@ Claude Code:
 claude mcp add trendflow -- npx -y trendflow-mcp
 ```
 
-Requires Node.js 18+.
+Requires Node.js 20+. (The library itself still runs on 18; the HTTP transport's dependencies
+do not.)
 
 ## Tools
 
