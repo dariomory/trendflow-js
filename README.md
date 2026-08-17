@@ -32,15 +32,16 @@ Requires Node.js 18+ (uses the global `fetch`). Ships ESM and CommonJS with bund
 ## Usage
 
 ```ts
-import { Client, Region, Timeframe, Resolution, ExportFormat } from "trendflow";
+import { Client, Region, Timeframe, Resolution, SearchProperty, ExportFormat } from "trendflow";
 
 // Initialize client (optional config)
 const tf = new Client({ language: "en", timeout: 10_000 });
 
 // --- Const objects for type safety ---
-// Region.US, Region.GB, Region.DE ...
-// Timeframe.PAST_DAY, Timeframe.PAST_WEEK, Timeframe.PAST_YEAR, Timeframe.PAST_5_YEARS
+// Region.US, Region.GB, Region.DE ...           (or any code: "US-CA", "807")
+// Timeframe.PAST_HOUR ... PAST_5_YEARS, ALL_TIME (or "2023-01-01 2023-06-30")
 // Resolution.COUNTRY, Resolution.REGION, Resolution.CITY
+// SearchProperty.WEB, IMAGES, NEWS, YOUTUBE, SHOPPING
 
 // Fetch interest over time
 const data = await tf.interestOverTime(
@@ -66,10 +67,20 @@ for (const item of trending.results) {
   // "fifa world cup 2026"  3650  6  "+3,650%"
 }
 
-// Related queries
-const related = await tf.relatedQueries("machine learning");
+// Related queries (region defaults to worldwide)
+const related = await tf.relatedQueries("machine learning", { region: Region.GB });
 for (const query of related.top) console.log(query.term, query.value);
 for (const query of related.rising) console.log(query.term, query.breakout);
+
+// --- Narrowing a query ---
+// Every query method takes an optional category and search property, and any of them
+// accepts a custom date range and a sub-region or metro code in place of the named values.
+
+// "jaguar" the car, on YouTube, in California, over the first half of 2023
+const jaguar = await tf.interestOverTime(["jaguar"], "2023-01-01 2023-06-30", "US-CA", {
+  category: 47, // Autos & Vehicles — disambiguates without needing a topic id
+  searchProperty: SearchProperty.YOUTUBE,
+});
 
 // --- Exports ---
 data.toArray();  // [{ date: Date, Python: 80, ... }] — plain objects, the JS answer to DataFrames
