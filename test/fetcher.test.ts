@@ -237,3 +237,95 @@ describe("error mapping", () => {
     ).rejects.toBeInstanceOf(ResponseError);
   });
 });
+
+describe("query filters", () => {
+  /** The explore request carries the payload as a `req` query param. */
+  function explorePayload(calls: Call[]): Record<string, unknown> {
+    const explore = calls.find((call) => call.url.includes("/api/explore"))!;
+    const req = new URL(explore.url).searchParams.get("req")!;
+    return JSON.parse(req) as Record<string, unknown>;
+  }
+
+  const TIMESERIES = {
+    "/api/explore": EXPLORE_WIDGETS,
+    "/widgetdata/multiline": { default: { timelineData: [] } },
+  };
+
+  it("sends category and search property", async () => {
+    // Both were pinned to 0 and "" by the fetcher regardless of what the caller wanted.
+    const { fetch, calls } = stubFetch(TIMESERIES);
+    const client = new GoogleTrendsFetcher({ fetch });
+
+    await client.interestOverTime(["jaguar"], Timeframe.PAST_YEAR, Region.US, {
+      category: 47,
+      searchProperty: "youtube",
+    });
+
+    const payload = explorePayload(calls);
+    expect(payload.category).toBe(47);
+    expect(payload.property).toBe("youtube");
+  });
+
+  it("accepts a custom date range and a sub-region", async () => {
+    const { fetch, calls } = stubFetch(TIMESERIES);
+    const client = new GoogleTrendsFetcher({ fetch });
+
+    await client.interestOverTime(["jaguar"], "2023-01-01 2023-06-30", "US-CA");
+
+    const explore = calls.find((call) => call.url.includes("/api/explore"))!;
+    expect(explore.url).toContain("US-CA");
+    expect(JSON.stringify(explorePayload(calls))).toContain("2023-01-01 2023-06-30");
+  });
+
+  it("lets interestByRegion take a timeframe", async () => {
+    // It hard-coded the past year, so "where was this searched last week" was unanswerable.
+    const { fetch, calls } = stubFetch({
+      "/api/explore": EXPLORE_WIDGETS,
+      "/widgetdata/comparedgeo": { default: { geoMapData: [] } },
+    });
+    const client = new GoogleTrendsFetcher({ fetch });
+
+    await client.interestByRegion("jaguar", Resolution.REGION, Region.US, {
+      timeframe: Timeframe.PAST_WEEK,
+    });
+
+    expect(JSON.stringify(explorePayload(calls))).toContain("now 7-d");
+  });
+
+  it("lets relatedQueries take a region", async () => {
+    // It hard-coded worldwide, silently ignoring where the caller cared about.
+    const { fetch, calls } = stubFetch({
+      "/api/explore": EXPLORE_WIDGETS,
+      "/widgetdata/relatedsearches": { default: { rankedList: [] } },
+    });
+    const client = new GoogleTrendsFetcher({ fetch });
+
+    await client.relatedQueries("jaguar", { region: Region.GB });
+
+    const explore = calls.find((call) => call.url.includes("/api/explore"))!;
+    expect(explore.url).toContain("GB");
+  });
+
+  it("rejects an unknown search property before any request", async () => {
+    const { fetch, calls } = stubFetch(TIMESERIES);
+    const client = new GoogleTrendsFetcher({ fetch });
+
+    await expect(
+      client.interestOverTime(["jaguar"], Timeframe.PAST_YEAR, Region.US, {
+        searchProperty: "video",
+      }),
+    ).rejects.toThrow(/searchProperty must be one of/);
+    expect(calls).toHaveLength(0);
+  });
+
+  it("defaults preserve the previous behaviour", async () => {
+    const { fetch, calls } = stubFetch(TIMESERIES);
+    const client = new GoogleTrendsFetcher({ fetch });
+
+    await client.interestOverTime(["python"], Timeframe.PAST_YEAR, Region.US);
+
+    const payload = explorePayload(calls);
+    expect(payload.category).toBe(0);
+    expect(payload.property).toBe("");
+  });
+});

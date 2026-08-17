@@ -1,9 +1,9 @@
-import { Region, Resolution, Timeframe } from "./enums.js";
+import { Region, Resolution, SearchProperty, Timeframe } from "./enums.js";
 import { ResponseError, TooManyRequestsError } from "./http/errors.js";
 import { ProxyPool } from "./http/proxy.js";
 import { UnknownRpcError, type RpcIds } from "./http/batchexecute.js";
 import type { TrendingBackend, TrendingProvider } from "./http/providers.js";
-import { GoogleTrendsHttpSession } from "./http/session.js";
+import { GoogleTrendsHttpSession, type Gprop } from "./http/session.js";
 import type {
   InterestByRegionResult,
   InterestOverTimeResult,
@@ -35,18 +35,62 @@ export function hlFromLanguage(language: string): string {
   return language.includes("-") ? language : `${language}-US`;
 }
 
+const SEARCH_PROPERTIES: ReadonlySet<string> = new Set(Object.values(SearchProperty));
+
+/**
+ * Narrow a search property to the literal the session accepts.
+ *
+ * The session validates too, but only once a payload is being built. Checking here means a
+ * mistyped string fails immediately with the allowed values, rather than surfacing later as
+ * something that looks like a network problem.
+ */
+function searchProperty(value: SearchProperty | (string & {}) | undefined): Gprop {
+  const text = value ?? SearchProperty.WEB;
+  if (!SEARCH_PROPERTIES.has(text)) {
+    const allowed = [...SEARCH_PROPERTIES].map((p) => JSON.stringify(p)).join(", ");
+    throw new Error(`searchProperty must be one of ${allowed}; got ${JSON.stringify(text)}`);
+  }
+  return text as Gprop;
+}
+
+/**
+ * Filters every query method accepts.
+ *
+ * `category` narrows to one of Google's subject areas (0, the default, is all of them) and
+ * disambiguates without a topic id: "jaguar" under Autos is the car. `searchProperty` picks
+ * the Google surface; the properties are separate indexes, so their values are not comparable
+ * to one another.
+ */
+export interface QueryFilters {
+  category?: number;
+  searchProperty?: SearchProperty | (string & {});
+}
+
+/**
+ * A preset range or a custom `"YYYY-MM-DD YYYY-MM-DD"` pair.
+ *
+ * `(string & {})` keeps the named values in editor completion while still accepting any
+ * string — the same trick `trendingNow` already uses for regions.
+ */
+export type TimeframeInput = Timeframe | (string & {});
+
+/** A country, a sub-region such as `"US-CA"`, or a metro code. */
+export type RegionInput = Region | (string & {});
+
 /** Strategy for retrieving Trends data (swap in tests or alternate backends). */
 export interface TrendsFetcher {
   interestOverTime(
     keywords: string[],
-    timeframe: Timeframe,
-    region: Region,
+    timeframe: TimeframeInput,
+    region: RegionInput,
+    filters?: QueryFilters,
   ): Promise<InterestOverTimeResult>;
 
   interestByRegion(
     keyword: string,
     resolution: Resolution,
-    region?: Region,
+    region?: RegionInput,
+    options?: QueryFilters & { timeframe?: TimeframeInput },
   ): Promise<InterestByRegionResult>;
 
   trendingNow(
@@ -54,7 +98,10 @@ export interface TrendsFetcher {
     options?: { window?: number; backend?: TrendingBackend },
   ): Promise<TrendingResult>;
 
-  relatedQueries(keyword: string): Promise<RelatedResult>;
+  relatedQueries(
+    keyword: string,
+    options?: QueryFilters & { timeframe?: TimeframeInput; region?: RegionInput },
+  ): Promise<RelatedResult>;
 
   suggestions(query: string): Promise<TopicSuggestion[]>;
 }
@@ -168,34 +215,48 @@ export class GoogleTrendsFetcher implements TrendsFetcher {
     throw lastError;
   }
 
+  /**
+   * Relative interest for up to five terms over `timeframe`.
+   *
+   * `timeframe` takes a {@link Timeframe} or a custom `"YYYY-MM-DD YYYY-MM-DD"` range, and
+   * `region` any Google geo code — a country, a sub-region like `"US-CA"`, or a metro code.
+   */
   async interestOverTime(
     keywords: string[],
-    timeframe: Timeframe,
-    region: Region,
+    timeframe: TimeframeInput,
+    region: RegionInput,
+    filters: QueryFilters = {},
   ): Promise<InterestOverTimeResult> {
     return this.withRotation(async () => {
       await this.session.buildPayload(keywords, {
-        cat: 0,
+        cat: filters.category ?? 0,
         timeframe,
         geo: region,
-        gprop: "",
+        gprop: searchProperty(filters.searchProperty),
       });
       const def = await this.session.interestOverTime();
       return parsers.interestOverTimeToResult(def, keywords, this.session.geo);
     });
   }
 
+  /**
+   * Where `keyword` is searched, broken down at `resolution`.
+   *
+   * `timeframe` defaults to the past year; narrow it to ask where something was searched
+   * during a specific window rather than across the whole year.
+   */
   async interestByRegion(
     keyword: string,
     resolution: Resolution,
-    region: Region = Region.US,
+    region: RegionInput = Region.US,
+    options: QueryFilters & { timeframe?: TimeframeInput } = {},
   ): Promise<InterestByRegionResult> {
     return this.withRotation(async () => {
       await this.session.buildPayload([keyword], {
-        cat: 0,
-        timeframe: Timeframe.PAST_YEAR,
+        cat: options.category ?? 0,
+        timeframe: options.timeframe ?? Timeframe.PAST_YEAR,
         geo: region,
-        gprop: "",
+        gprop: searchProperty(options.searchProperty),
       });
       const def = await this.session.interestByRegion({ resolution, incLowVol: true });
       if (!def?.geoMapData?.length) {
@@ -270,13 +331,22 @@ export class GoogleTrendsFetcher implements TrendsFetcher {
     return this.withRotation(() => this.session.geoList());
   }
 
-  async relatedQueries(keyword: string): Promise<RelatedResult> {
+  /**
+   * Top and rising searches related to `keyword`.
+   *
+   * `region` defaults to worldwide, which is what this returned unconditionally before it was
+   * a parameter — pass a country to ask what is searched alongside the term *there*.
+   */
+  async relatedQueries(
+    keyword: string,
+    options: QueryFilters & { timeframe?: TimeframeInput; region?: RegionInput } = {},
+  ): Promise<RelatedResult> {
     return this.withRotation(async () => {
       await this.session.buildPayload([keyword], {
-        cat: 0,
-        timeframe: Timeframe.PAST_YEAR,
-        geo: "",
-        gprop: "",
+        cat: options.category ?? 0,
+        timeframe: options.timeframe ?? Timeframe.PAST_YEAR,
+        geo: options.region ?? Region.WORLDWIDE,
+        gprop: searchProperty(options.searchProperty),
       });
       const raw = await this.session.relatedQueries();
       return parsers.relatedQueriesToResult(raw, keyword);

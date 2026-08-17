@@ -1,7 +1,13 @@
 export { GoogleTrendsFetcher, GoogleTrendsFetcher as Client, TrendingWindow } from "./fetcher.js";
-export type { ClientOptions, TrendsFetcher } from "./fetcher.js";
+export type {
+  ClientOptions,
+  QueryFilters,
+  RegionInput,
+  TimeframeInput,
+  TrendsFetcher,
+} from "./fetcher.js";
 
-export { ExportFormat, Region, Resolution, Timeframe } from "./enums.js";
+export { ExportFormat, Region, Resolution, SearchProperty, Timeframe } from "./enums.js";
 
 export { InterestOverTimeResult } from "./models.js";
 export type {
