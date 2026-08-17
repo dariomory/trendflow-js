@@ -42,6 +42,33 @@ function isMissing(value: unknown): boolean {
   return value === null || value === undefined || (typeof value === "number" && Number.isNaN(value));
 }
 
+/**
+ * An array to iterate, whatever Google sent.
+ *
+ * Every parser below reads a positional structure Google owns and can change without notice.
+ * Individual rows were already guarded; the containers were not, so a `null` where an array was
+ * expected threw out of the parser and became an error for the caller. Junk in, empty out —
+ * never a throw.
+ */
+function rowsOf(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+/** An object to read, whatever Google sent. See {@link rowsOf}. */
+function fieldsOf(value: unknown): Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+/** Epoch seconds from a timeline entry, or null when it carries none that can be used. */
+function timestampOf(entry: unknown): number | null {
+  const raw = fieldsOf(entry).time;
+  if (typeof raw !== "string" && typeof raw !== "number") return null;
+  const seconds = Number(raw);
+  return Number.isFinite(seconds) ? seconds : null;
+}
+
 export function inferGranularity(d0: Date, d1: Date): string {
   const days = Math.floor((d1.getTime() - d0.getTime()) / MS_PER_DAY);
   if (days >= 6) return "weekly";
@@ -56,16 +83,21 @@ export function interestOverTimeToResult(
   geo: string | string[],
 ): InterestOverTimeResult {
   const geoList = Array.isArray(geo) ? geo : [geo];
-  const timeline: Array<Record<string, unknown>> = def?.timelineData ?? [];
+  // Paired with its timestamp up front: an entry with no usable `time` cannot be placed on an
+  // axis, and dropping it beats discarding the whole series over one malformed point.
+  const timeline = rowsOf(fieldsOf(def).timelineData)
+    .map((entry) => ({ at: timestampOf(entry), entry }))
+    .filter((row): row is { at: number; entry: unknown } => row.at !== null);
   if (timeline.length === 0) {
     return new InterestOverTimeResult(keywords, "unknown", []);
   }
 
   let granularity = "unknown";
   if (timeline.length >= 2) {
-    const t0 = Number(timeline[0]!.time);
-    const t1 = Number(timeline[1]!.time);
-    granularity = inferGranularity(new Date(t0 * 1000), new Date(t1 * 1000));
+    granularity = inferGranularity(
+      new Date(timeline[0]!.at * 1000),
+      new Date(timeline[1]!.at * 1000),
+    );
   }
 
   // Series order matches itertools.product(keywords, geoList) in the Python library.
@@ -76,9 +108,9 @@ export function interestOverTimeToResult(
     }
   }
 
-  const points: TrendPoint[] = timeline.map((entry) => {
-    const date = new Date(Number(entry.time) * 1000);
-    const values = splitBracketedInts(entry.value ?? "");
+  const points: TrendPoint[] = timeline.map(({ at, entry }) => {
+    const date = new Date(at * 1000);
+    const values = splitBracketedInts(fieldsOf(entry).value ?? "");
     const scores: Record<string, number> = {};
     for (let i = 0; i < series.length && i < values.length; i += 1) {
       scores[series[i]!] = values[i]!;
@@ -96,11 +128,11 @@ export function interestByRegionRows(
   kwList: string[],
 ): RegionalInterestRow[] {
   const idx = kwList.includes(keyword) ? kwList.indexOf(keyword) : 0;
-  const items: Array<Record<string, unknown>> = def?.geoMapData ?? [];
-  return items.map((item) => {
-    const values = splitBracketedInts(item.value ?? "");
+  return rowsOf(fieldsOf(def).geoMapData).map((item) => {
+    const cells = fieldsOf(item);
+    const values = splitBracketedInts(cells.value ?? "");
     return {
-      label: String(item.geoName ?? ""),
+      label: String(cells.geoName ?? ""),
       value: idx < values.length ? values[idx]! : 0,
     };
   });
@@ -121,9 +153,9 @@ function formatGrowth(growth: number | null): string {
 }
 
 /** Map `[term, growthPercent, volumeIndex]` rows from the trending RPC to {@link TrendingItem}. */
-export function trendingRowsToItems(rows: unknown[]): TrendingItem[] {
+export function trendingRowsToItems(rows: unknown): TrendingItem[] {
   const items: TrendingItem[] = [];
-  for (const row of rows) {
+  for (const row of rowsOf(rows)) {
     if (!Array.isArray(row)) continue;
     const growth = toIntOrNull(row[1]);
     items.push({
@@ -140,9 +172,9 @@ export function trendingRowsToItems(rows: unknown[]): TrendingItem[] {
 }
 
 /** Map `[mid, title, type, ...]` rows from the suggestions RPC to {@link TopicSuggestion}. */
-export function suggestionRowsToTopics(rows: unknown[]): TopicSuggestion[] {
+export function suggestionRowsToTopics(rows: unknown): TopicSuggestion[] {
   const out: TopicSuggestion[] = [];
-  for (const row of rows) {
+  for (const row of rowsOf(rows)) {
     if (!Array.isArray(row) || typeof row[0] !== "string") continue;
     const type = typeof row[2] === "string" && row[2].length > 0 ? row[2] : null;
     out.push({ mid: row[0], title: String(row[1] ?? ""), type });
@@ -158,38 +190,38 @@ function toIntOrNull(value: unknown): number | null {
   return Number.isFinite(parsed) ? Math.trunc(parsed) : null;
 }
 
-export function parseTopRelated(rows: RankedKeyword[] | null | undefined): RelatedQuery[] {
-  if (!rows) return [];
-  return rows.map((row) => ({
-    term: String(row.query ?? ""),
-    value: toIntOrNull(row.value),
-  }));
+export function parseTopRelated(rows: unknown): RelatedQuery[] {
+  return rowsOf(rows).map((row) => {
+    const cells = fieldsOf(row);
+    return { term: String(cells.query ?? ""), value: toIntOrNull(cells.value) };
+  });
 }
 
-export function parseRisingRelated(rows: RankedKeyword[] | null | undefined): RelatedQuery[] {
-  if (!rows) return [];
-  return rows.map((row) => {
-    const raw = row.formattedValue !== undefined ? row.formattedValue : row.value;
+export function parseRisingRelated(rows: unknown): RelatedQuery[] {
+  return rowsOf(rows).map((row) => {
+    const cells = fieldsOf(row);
+    const raw = cells.formattedValue !== undefined ? cells.formattedValue : cells.value;
     return {
-      term: String(row.query ?? ""),
+      term: String(cells.query ?? ""),
       breakout: isMissing(raw) ? null : String(raw),
     };
   });
 }
 
 /** Pick the bucket for `keyword`, or the sole bucket if only one series exists. */
-export function relatedQueriesToResult(raw: RelatedQueriesRaw, keyword: string): RelatedResult {
-  const keys = Object.keys(raw ?? {});
+export function relatedQueriesToResult(raw: unknown, keyword: string): RelatedResult {
+  const buckets = fieldsOf(raw);
+  const keys = Object.keys(buckets);
   if (keys.length === 0) return { top: [], rising: [] };
 
-  let part = raw[keyword];
+  // Falling back to the sole bucket is safe; guessing between several would attribute one
+  // term's data to another.
+  let part = buckets[keyword];
   if (part === undefined) {
     if (keys.length !== 1) return { top: [], rising: [] };
-    part = raw[keys[0]!]!;
+    part = buckets[keys[0]!];
   }
 
-  return {
-    top: parseTopRelated(part.top),
-    rising: parseRisingRelated(part.rising),
-  };
+  const cells = fieldsOf(part);
+  return { top: parseTopRelated(cells.top), rising: parseRisingRelated(cells.rising) };
 }
