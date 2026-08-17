@@ -1,6 +1,6 @@
 {
   "name": "trendflow",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Type-safe Google Trends API client for JavaScript & TypeScript — interest over time, by region, trending now, related queries. ESM + CJS, zero dependencies, proxy rotation.",
   "keywords": [
     "google-trends",

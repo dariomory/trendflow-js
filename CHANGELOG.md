@@ -1,9 +1,25 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
+
+Unlocks the query parameters Google always accepted but the client pinned shut.
 
 ### Added
 
+- **Search property.** `searchProperty` on `interestOverTime`, `interestByRegion`, and
+  `relatedQueries` measures YouTube, News, Images, or Shopping instead of web search. These are
+  separate indexes rather than filters over one dataset, so a term can be quiet on web search
+  and busy on YouTube, and values are only comparable within a single property.
+- **Category.** `category` restricts a query to one of Google's subject areas. It disambiguates
+  without needing a topic id: "jaguar" under Autos & Vehicles is the car.
+- **Five more timeframes.** `PAST_HOUR`, `PAST_4_HOURS`, `PAST_MONTH`, `PAST_3_MONTHS`, and
+  `ALL_TIME`. The range also decides granularity — the hourly ranges return minute-level points,
+  `ALL_TIME` monthly ones — so asking for five years cannot show a spike that lasted an
+  afternoon.
+- **Custom date ranges.** Any query method accepts `"2023-01-01 2023-06-30"` in place of a
+  `Timeframe` member.
+- **Arbitrary regions.** Geo arguments take any code Google accepts, including sub-regions such
+  as `"US-CA"` and metro codes, rather than only the named `Region` members.
 - **HTTP transport for `trendflow-mcp`.** `--http[=PORT]`, or `TRENDFLOW_HTTP_PORT`, serves the
   same tools over Streamable HTTP at `/mcp` instead of stdio, for self-hosting. Binds loopback
   by default (`TRENDFLOW_HTTP_HOST`) because it carries no authentication, and serves one
@@ -13,8 +29,15 @@
 
 ### Fixed
 
+- **`interestByRegion` ignored the timeframe.** It hard-coded the past year, so "where was this
+  searched last week" could not be asked. It now takes a `timeframe` option.
+- **`relatedQueries` ignored the region.** It hard-coded worldwide, so a caller who wanted what
+  is searched alongside a term *in a specific country* silently received global results. It now
+  takes a `region` option, still defaulting to worldwide.
 - Documented that `TrendingItem.articles` is empty only on the RPC backend. The `"rss"` backend
   has carried articles since 0.2.0, but README and docs still said the field is always empty.
+
+## 0.2.0
 
 Reaches feature parity with [`trendflow-py`](https://github.com/dariomory/trendflow) 0.2.0.
 
